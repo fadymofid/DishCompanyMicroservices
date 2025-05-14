@@ -1,0 +1,4 @@
+package com.example.dishescompany.client;
+
+public class ShippingServiceClient {
+}

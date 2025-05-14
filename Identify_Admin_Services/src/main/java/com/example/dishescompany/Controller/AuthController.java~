@@ -1,0 +1,55 @@
+package com.example.dishescompany.Controller;
+
+import com.example.dishescompany.DTO.AuthResponse;
+import com.example.dishescompany.DTO.LoginRequest;
+import com.example.dishescompany.DTO.RegisterRequest;
+import com.example.dishescompany.Service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    @Autowired
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    /**
+     * Register a new user.
+     * Roles: CUSTOMER (requires address) or SELLER.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest req) {
+        authService.register(req);
+        return ResponseEntity.ok(new AuthResponse("Registration successful"));
+    }
+
+    /**
+     * Login with username & password.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<Void> login(@RequestBody LoginRequest request) {
+        String role = authService.login(request);
+
+        String redirectUrl = switch (role) {
+            case "CUSTOMER" -> "/customer/home";
+            case "SELLER"   -> "/seller/home";
+            case "ADMIN"    -> "/admin/home";
+            default         -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown role");
+        };
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.LOCATION, redirectUrl)
+                .build();
+    }
+
+}
