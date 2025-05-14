@@ -1,0 +1,47 @@
+package com.models;
+
+import jakarta.persistence.*;
+
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+
+@Table(name = "sellers")
+public class Seller extends User {
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
+    private Set<Dish> dishes = new HashSet<>();
+
+    // reference to the company they represent
+    @Column(nullable = false)
+    private String companyName;
+
+    public Seller() {
+    }
+
+    @java.lang.Override
+    public java.lang.String toString() {
+        return "Seller{" +
+                "dishes=" + dishes +
+                ", companyName='" + companyName + '\'' +
+                '}';
+    }
+// getters/setters
+
+    public Set<Dish> getDishes() {
+        return dishes;
+    }
+
+    public void setDishes(Set<Dish> dishes) {
+        this.dishes = dishes;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+}

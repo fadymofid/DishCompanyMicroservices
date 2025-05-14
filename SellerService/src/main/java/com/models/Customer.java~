@@ -1,0 +1,55 @@
+package com.models;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "customers")
+public class Customer extends User {
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    private Set<Order> orders = new HashSet<>();
+
+    private String address;
+
+
+    // No-arg constructor (JPA requirement)
+    public Customer() {}
+
+    // Convenience constructor
+    public Customer(String username, String password, String email, String address) {
+        super(username, password, email); // Assuming User class has these fields
+        this.address = address;
+    }
+
+    // Getters and setters
+    public Set<Order> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(Set<Order> orders) {
+        this.orders = orders;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    // Utility method to add/remove orders
+//    public void addOrder(Order order) {
+//        orders.add(order);
+//        order.setCustomer(this);
+//    }
+//
+//    public void removeOrder(Order order) {
+//        orders.remove(order);
+//        order.setCustomer(null);
+//    }
+}

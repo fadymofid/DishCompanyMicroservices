@@ -1,0 +1,4 @@
+package com.example.order_shipping.Repo;
+
+public interface ShippingCompanyRepository {
+}
