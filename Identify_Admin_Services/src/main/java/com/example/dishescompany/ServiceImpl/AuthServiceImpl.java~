@@ -1,0 +1,68 @@
+// src/main/java/com/example/identityadmin/service/AuthServiceImpl.java
+package com.example.dishescompany.ServiceImpl;
+
+import com.example.dishescompany.DTO.LoginRequest;
+import com.example.dishescompany.DTO.RegisterRequest;
+import com.example.dishescompany.Models.Credential;
+import com.example.dishescompany.Repo.CredentialRepository;
+import com.example.dishescompany.Repo.CustomerRepository;
+import com.example.dishescompany.Models.Customer;
+import com.example.dishescompany.Service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class AuthServiceImpl implements AuthService {
+
+    private final CredentialRepository credentialRepo;
+    private final CustomerRepository customerRepo;
+
+    @Autowired
+    public AuthServiceImpl(CredentialRepository credentialRepo,
+                           CustomerRepository customerRepo) {
+        this.credentialRepo = credentialRepo;
+        this.customerRepo = customerRepo;
+    }
+
+    public void register(RegisterRequest req) {
+        // 1. Check if username already exists
+        if (credentialRepo.findByUsername(req.getUsername()) != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Username already exists"
+            );
+        }
+
+        // 2. Store customer credentials with role = "CUSTOMER"
+        Credential cred = new Credential(
+                req.getUsername(),
+                req.getPassword(),
+                "CUSTOMER"
+        );
+        credentialRepo.save(cred);
+
+        // 3. Create and store customer domain object
+        Customer customer = new Customer();
+        customer.setUsername(req.getUsername());
+        customer.setAddress(req.getAddress() != null ? req.getAddress() : "");
+        customerRepo.save(customer);
+    }
+
+    @Override
+    public void login(LoginRequest request) {
+        Credential credential = credentialRepo.findByUsername(request.getUsername());
+
+        // 1. Check username/password match
+        if (credential == null || !credential.getPassword().equals(request.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        }
+
+        // 2. Validate role match
+        if (!credential.getRole().equalsIgnoreCase(request.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid role for this account");
+        }
+
+    }
+}
+

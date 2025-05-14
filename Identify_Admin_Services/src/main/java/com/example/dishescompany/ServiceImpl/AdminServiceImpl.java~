@@ -1,0 +1,86 @@
+// src/main/java/com/example/dishescompany/service/AdminServiceImpl.java
+package com.example.dishescompany.ServiceImpl;
+
+import com.example.dishescompany.Service.AdminService;
+import com.example.dishescompany.client.SellerServiceClient;
+import com.example.dishescompany.client.ShippingServiceClient;
+import com.example.dishescompany.DTO.SellerAccountDTO;
+import com.example.dishescompany.DTO.SellerDTO;
+import com.example.dishescompany.DTO.CustomerDTO;
+import com.example.dishescompany.DTO.ShippingCompanyRequest;
+import com.example.dishescompany.DTO.ShippingCompanyResponse;
+import com.example.dishescompany.Models.Credential;
+import com.example.dishescompany.Repo.CredentialRepository;
+import com.example.dishescompany.Repo.CustomerRepository;
+import com.example.dishescompany.Models.Customer;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class AdminServiceImpl implements AdminService {
+
+    private static final int PASSWORD_LENGTH = 8;
+
+    private final CredentialRepository    credentialRepo;
+    private final CustomerRepository      customerRepo;
+    private final SellerServiceClient     sellerClient;
+    private final ShippingServiceClient   shippingClient;
+
+    @Autowired
+    public AdminServiceImpl(CredentialRepository credentialRepo,
+                            CustomerRepository     customerRepo,
+                            SellerServiceClient    sellerClient,
+                            ShippingServiceClient  shippingClient) {
+        this.credentialRepo   = credentialRepo;
+        this.customerRepo     = customerRepo;
+        this.sellerClient     = sellerClient;
+        this.shippingClient   = shippingClient;
+    }
+
+    public SellerAccountDTO createSellerAccount(String companyName, String username) {
+        String rawPassword = RandomStringUtils.randomAlphanumeric(PASSWORD_LENGTH);
+
+        // Save in admin DB
+        Credential cred = new Credential(username, rawPassword, "SELLER");
+        credentialRepo.save(cred);
+
+        // Notify Seller Service
+        sellerClient.createSeller(companyName, username, rawPassword);
+
+        // Return for UI to show admin
+        return new SellerAccountDTO(companyName, username, rawPassword);
+    }
+
+    @Override
+    public List<CustomerDTO> listCustomers() {
+        return customerRepo.findAll().stream()
+                .map(c -> new CustomerDTO(c.getId(), c.getUsername(), c.getAddress()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SellerDTO> listSellers() {
+        // fetch domain sellers from Seller Service
+        return sellerClient.getAllSellers();
+    }
+
+    @Override
+    public void createShippingCompany(ShippingCompanyRequest req) {
+        if (req.getName() == null || req.getName().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Company name must be provided");
+        }
+        shippingClient.createCompany(req);
+    }
+
+    @Override
+    public List<ShippingCompanyResponse> listShippingCompanies() {
+        return shippingClient.getAllCompanies();
+    }
+}
