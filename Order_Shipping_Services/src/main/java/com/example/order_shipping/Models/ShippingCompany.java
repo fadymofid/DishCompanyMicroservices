@@ -28,5 +28,28 @@ public class ShippingCompany {
     @Column(name = "region")
     private Set<String> coverageRegions = new HashSet<>();
 
-    // getters/setters
+    // Getters and setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<String> getCoverageRegions() {
+        return coverageRegions;
+    }
+
+    public void setCoverageRegions(Set<String> coverageRegions) {
+        this.coverageRegions = coverageRegions;
+    }
 }

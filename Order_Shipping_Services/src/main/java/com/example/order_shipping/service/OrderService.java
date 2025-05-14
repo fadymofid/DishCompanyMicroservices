@@ -9,4 +9,5 @@ public interface OrderService {
     OrderResponse processOrder(OrderRequest request);
     List<OrderResponse> getOrdersByCustomer(Long customerId);
     void cancelOrder(String orderId);
+    OrderResponse getOrderDetails(String orderId);
 }

@@ -5,8 +5,7 @@ public class CustomerDTO {
     private String username;
     private String address;
 
-    public CustomerDTO() {
-    }
+    public CustomerDTO() {}
 
     public CustomerDTO(Long id, String username, String address) {
         this.id = id;
@@ -22,14 +21,6 @@ public class CustomerDTO {
         this.id = id;
     }
 
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
     public String getUsername() {
         return username;
     }
@@ -37,5 +28,12 @@ public class CustomerDTO {
     public void setUsername(String username) {
         this.username = username;
     }
-// getters & setters
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.order_shipping.serviceimpl;
 
 import com.example.order_shipping.DTO.ShippingCompanyRequest;
+import com.example.order_shipping.DTO.ShippingCompanyResponse;
 import com.example.order_shipping.Models.ShippingCompany;
 import com.example.order_shipping.Repo.ShippingCompanyRepository;
 import com.example.order_shipping.service.ShippingService;
@@ -10,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ShippingServiceImpl implements ShippingService {
@@ -73,4 +77,24 @@ public class ShippingServiceImpl implements ShippingService {
                 String.format("Created shipping company '%s'", company.getName())
         );
     }
+    @Override
+    public ShippingCompany getShippingCompany(Long id) {
+        return shippingCompanyRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Shipping company not found"));
+    }
+
+    @Override
+    public List<ShippingCompanyResponse> getAllShippingCompanies() {
+        return shippingCompanyRepository.findAll()
+                .stream()
+                .map(company -> new ShippingCompanyResponse(
+                        company.getId(),
+                        company.getName(),
+                        company.getCoverageRegions()
+                ))
+                .collect(Collectors.toList());
+    }
+
+
 }
