@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-5">
+  <h2>Welcome Seller</h2>
+  <p>Manage your seller platform here.</p>
+
+  <div id="sellerContent">
+    <!-- Seller-specific content -->
+    <button id="addDishBtn" class="btn btn-primary">Add Dish</button>
+    <button id="viewOrdersBtn" class="btn btn-secondary">View Orders</button>
+    <button id="updateStockBtn" class="btn btn-warning">Update Stock</button>
+    <!-- Add more buttons or sections here -->
+  </div>
+
+  <button id="logoutBtn" class="btn btn-danger mt-3">Logout</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Redirect if not logged in or if role is not seller
+  if (localStorage.getItem('role') !== 'SELLER') {
+    window.location.href = '/login.html';  // Redirect to login if not a seller
+  }
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  logoutBtn.addEventListener('click', function() {
+    localStorage.removeItem('role');
+    window.location.href = '/login.html';
+  });
+
+  // Add event listeners for seller-specific actions
+  document.getElementById('addDishBtn').addEventListener('click', function() {
+    window.location.href = '/addDish.html'; // Redirect to Add Dish page
+  });
+
+  document.getElementById('viewOrdersBtn').addEventListener('click', function() {
+    window.location.href = '/viewOrders.html'; // Redirect to View Orders page
+  });
+
+  document.getElementById('updateStockBtn').addEventListener('click', function() {
+    window.location.href = '/updateStock.html'; // Redirect to Update Stock page
+  });
+</script>
+</body>
+</html>
