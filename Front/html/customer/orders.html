@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>My Orders</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+            <!-- Orders will be loaded here -->
+        </tbody>
+    </table>
+    <script>
+      // Example: fetch and render orders
+      // fetch('/api/customer/orders').then(...)
+    </script>
+</body>
+</html>

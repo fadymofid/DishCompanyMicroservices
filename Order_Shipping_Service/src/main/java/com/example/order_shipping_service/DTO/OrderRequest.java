@@ -5,17 +5,15 @@ import java.util.List;
 public class OrderRequest {
     private Long orderId;               // optional, for correlating replies
     private Long customerId;
-    private Long shippingCompanyId;
     private String customerRegion;
     private List<OrderItemRequest> items;
 
     public OrderRequest() {}
 
-    public OrderRequest(Long orderId, Long customerId, Long shippingCompanyId,
+    public OrderRequest(Long orderId, Long customerId,
                         String customerRegion, List<OrderItemRequest> items) {
         this.orderId           = orderId;
         this.customerId        = customerId;
-        this.shippingCompanyId = shippingCompanyId;
         this.customerRegion    = customerRegion;
         this.items             = items;
     }
@@ -36,13 +34,6 @@ public class OrderRequest {
         this.customerId = customerId;
     }
 
-    public Long getShippingCompanyId() {
-        return shippingCompanyId;
-    }
-
-    public void setShippingCompanyId(Long shippingCompanyId) {
-        this.shippingCompanyId = shippingCompanyId;
-    }
 
     public String getCustomerRegion() {
         return customerRegion;

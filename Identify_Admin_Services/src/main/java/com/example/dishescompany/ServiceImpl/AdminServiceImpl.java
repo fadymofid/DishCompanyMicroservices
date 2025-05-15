@@ -1,23 +1,27 @@
 package com.example.dishescompany.ServiceImpl;
 
-import com.example.dishescompany.DTO.*;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.example.dishescompany.DTO.CreateSellerRequest;
+import com.example.dishescompany.DTO.CustomerDTO;
+import com.example.dishescompany.DTO.SellerAccountDTO;
+import com.example.dishescompany.DTO.SellerDTO;
 import com.example.dishescompany.Models.Role;
 import com.example.dishescompany.Models.Seller;
 import com.example.dishescompany.Repo.CustomerRepository;
 import com.example.dishescompany.Repo.UserRepository;
 import com.example.dishescompany.Service.AdminService;
 import com.example.dishescompany.config.RabbitConfig;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("deprecation")
 public class AdminServiceImpl implements AdminService {
 
     private static final int PASSWORD_LENGTH = 8;
@@ -26,7 +30,6 @@ public class AdminServiceImpl implements AdminService {
     private final CustomerRepository customerRepo;
     private final RabbitTemplate    rabbitTemplate;
 
-    @Autowired
     public AdminServiceImpl(UserRepository userRepo,
                             CustomerRepository customerRepo,
                             RabbitTemplate rabbitTemplate) {
@@ -88,25 +91,5 @@ public class AdminServiceImpl implements AdminService {
         return userRepo.findByRole(Role.SELLER).stream()
                 .map(u -> new SellerDTO(u.getId(), ((Seller)u).getCompanyName(), u.getUsername()))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public void createShippingCompany(ShippingCompanyRequest req) {
-        if (req.getName() == null || req.getName().isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Shipping company name must be provided");
-        }
-        // publish "shipping.create" event
-        rabbitTemplate.convertAndSend(
-                RabbitConfig.ADMIN_EXCHANGE,
-                RabbitConfig.ROUTING_CREATE_SHIPPING,
-                req
-        );
-    }
-
-    @Override
-    public List<ShippingCompanyResponse> listShippingCompanies() {
-        // Similar to sellers: return from a local read‐model or via request/response pattern
-        return List.of(); // placeholder
     }
 }

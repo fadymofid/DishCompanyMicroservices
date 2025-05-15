@@ -90,11 +90,6 @@ public class RabbitConfig {
         return QueueBuilder.durable("inventory.release.queue").build();
     }
 
-    @Bean
-    public Queue shippingReleaseQueue() {
-        return QueueBuilder.durable("shipping.release.queue").build();
-    }
-
     // Bindings
     @Bean
     public Binding bindStockCheck() {
@@ -157,12 +152,5 @@ public class RabbitConfig {
         return BindingBuilder.bind(inventoryReleaseQueue())
                 .to(orderExchange())
                 .with("inventory.release");
-    }
-
-    @Bean
-    public Binding bindShippingRelease() {
-        return BindingBuilder.bind(shippingReleaseQueue())
-                .to(orderExchange())
-                .with("shipping.release");
     }
 }

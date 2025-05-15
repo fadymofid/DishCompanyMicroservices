@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place New Order</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>Place New Order</h1>
+    <form action="/orders/new" method="post">
+        <h2>Step 1: Select Dishes</h2>
+        <div id="dishes">
+            <!-- Dynamically load dishes here -->
+        </div>
+
+        <h2>Step 2: Select Shipping Company</h2>
+        <select id="shippingCompany" name="shippingCompany" required>
+            <!-- Dynamically load shipping companies here -->
+        </select>
+
+        <h2>Step 3: Review Order</h2>
+        <p>Subtotal: <span id="subtotal">$0.00</span></p>
+        <p>Shipping Fee: <span id="shippingFee">$0.00</span></p>
+        <p>Total: <span id="total">$0.00</span></p>
+
+        <button type="submit">Confirm Order</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>My Dishes</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Dish ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody id="dishesTableBody">
+            <!-- Dishes will be loaded here -->
+        </tbody>
+    </table>
+    <script>
+      // Example: fetch and render dishes
+      // fetch('/api/seller/dishes').then(...)
+    </script>
+</body>
+</html>

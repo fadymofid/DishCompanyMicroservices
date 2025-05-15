@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>Order Details</h1>
+    <div id="orderDetails">
+        <!-- Order details will be loaded here -->
+    </div>
+    <div id="orderStatus">
+        <!-- Real-time status updates here -->
+    </div>
+    <script>
+      // Example: fetch and render order details
+      // fetch('/api/customer/orders/{id}').then(...)
+    </script>
+</body>
+</html>

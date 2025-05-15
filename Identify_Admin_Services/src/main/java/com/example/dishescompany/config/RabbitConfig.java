@@ -17,8 +17,6 @@ public class RabbitConfig {
     public static final String CUSTOMER_RESPONSE_QUEUE= "customer.response.queue";
     public static final String ADMIN_EXCHANGE           = "admin-exchange";
     public static final String ROUTING_CREATE_SELLER    = "seller.create";
-    public static final String ROUTING_CREATE_SHIPPING  = "shipping.create";
-
     @Bean
     public TopicExchange customerExchange() {
         return ExchangeBuilder

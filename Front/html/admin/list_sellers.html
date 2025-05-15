@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List Sellers</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>List of Dish-Seller Representatives</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Rep ID</th>
+                <th>Company Name</th>
+                <th>Username</th>
+                <th>Contact</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Example row -->
+            <tr>
+                <td>1</td>
+                <td>Example Company</td>
+                <td>example_user</td>
+                <td>example@example.com</td>
+                <td><button>Reset Password</button></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

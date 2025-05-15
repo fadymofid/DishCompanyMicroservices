@@ -1,11 +1,11 @@
 package com.example.dishescompany.Service;
 
-import com.example.dishescompany.DTO.*;
-
 import java.util.List;
 
-
-import java.util.List;
+import com.example.dishescompany.DTO.CreateSellerRequest;
+import com.example.dishescompany.DTO.CustomerDTO;
+import com.example.dishescompany.DTO.SellerAccountDTO;
+import com.example.dishescompany.DTO.SellerDTO;
 
 public interface AdminService {
 
@@ -16,10 +16,4 @@ public interface AdminService {
 
     /** List all seller domain accounts (from Seller microservice) */
     List<SellerDTO> listSellers();
-
-    /** Create a new shipping company via Shipping microservice */
-    void createShippingCompany(ShippingCompanyRequest req);
-
-    /** List all shipping companies (from Shipping microservice) */
-    List<ShippingCompanyResponse> listShippingCompanies();
 }

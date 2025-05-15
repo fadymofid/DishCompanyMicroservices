@@ -4,11 +4,12 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.example.order_shipping_service.service.PaymentService;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.order_shipping_service.service.PaymentService;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -30,7 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional
-    public void processPayment(String orderId,
+    public void processPayment(Long orderId,
                                BigDecimal orderSubtotal,
                                BigDecimal shippingFee) {
         BigDecimal totalCharge = orderSubtotal.add(shippingFee);
@@ -54,12 +55,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private boolean attemptPaymentProcessing(BigDecimal amount) {
+    public boolean attemptPaymentProcessing(BigDecimal amount) {
         // TODO: integrate real gateway here
         return true;
     }
 
-    private void publishPaymentSuccess(String orderId, BigDecimal amount) {
+    public void publishPaymentSuccess(Long orderId, BigDecimal amount) {
         // 1) payments direct exchange
         Map<String,Object> payload = new HashMap<>();
         payload.put("orderId", orderId);
@@ -72,11 +73,11 @@ public class PaymentServiceImpl implements PaymentService {
                 createLogPayload(orderId, logMsg));
 
         // 3) customer notification
-        rabbitTemplate.convertAndSend("customer.notifications", orderId,
+        rabbitTemplate.convertAndSend("customer.notifications", String.valueOf(orderId),
                 "Your payment of " + amount + " was successful.");
     }
 
-    private void publishPaymentFailed(String orderId, String reason) {
+    public void publishPaymentFailed(Long orderId, String reason) {
         // 1) payments direct exchange
         Map<String,Object> payload = new HashMap<>();
         payload.put("orderId", orderId);
@@ -89,16 +90,21 @@ public class PaymentServiceImpl implements PaymentService {
                 createLogPayload(orderId, logMsg));
 
         // 3) customer notification
-        rabbitTemplate.convertAndSend("customer.notifications", orderId,
+        rabbitTemplate.convertAndSend("customer.notifications", String.valueOf(orderId),
                 "We’re sorry—your payment failed: " + reason);
     }
 
-    private Map<String,Object> createLogPayload(String orderId, String message) {
+    public Map<String,Object> createLogPayload(Long orderId, String message) {
         Map<String,Object> log = new HashMap<>();
         log.put("orderId", orderId);
         log.put("service", "PaymentService");
         log.put("message", message);
         log.put("timestamp", System.currentTimeMillis());
         return log;
+    }
+    @Override
+    public void handlePaymentFailure(Long orderId) {
+        String message = "Payment failed for order: " + orderId;
+        rabbitTemplate.convertAndSend("payment.failure.exchange", "PaymentFailed", message);
     }
 }

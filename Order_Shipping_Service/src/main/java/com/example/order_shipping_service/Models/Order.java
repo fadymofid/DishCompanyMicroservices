@@ -1,9 +1,19 @@
 package com.example.order_shipping_service.Models;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "orders")
@@ -22,10 +32,11 @@ public class Order {
     private OrderStatus status;
 
     private BigDecimal totalAmount;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shipping_company_id")
-    private ShippingCompany shippingCompany;
+    // Default constructor
+    public Order() {
+        this.status = OrderStatus.PENDING; // Default status
+        this.totalAmount = BigDecimal.ZERO; // Default total amount
+    }
 
     // Getters and setters
     public Long getId() {
@@ -68,12 +79,6 @@ public class Order {
         this.totalAmount = totalAmount;
     }
 
-    public ShippingCompany getShippingCompany() {
-        return shippingCompany;
-    }
 
-    public void setShippingCompany(ShippingCompany shippingCompany) {
-        this.shippingCompany = shippingCompany;
-    }
 }
 

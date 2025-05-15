@@ -1,14 +1,10 @@
 package com.example.order_shipping_service.serviceimpl;
 
-import com.example.order_shipping_service.DTO.*;
-import com.example.order_shipping_service.Models.Order;
-import com.example.order_shipping_service.Models.OrderStatus;
-import com.example.order_shipping_service.Repo.OrderRepository;
-import com.example.order_shipping_service.config.RabbitConfig;
-import com.example.order_shipping_service.Listeners.CustomerResponseListener;
-import com.example.order_shipping_service.Listeners.DishResponseListener;
-import com.example.order_shipping_service.service.OrderService;
-import com.example.order_shipping_service.service.ShippingService;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,10 +12,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import com.example.order_shipping_service.DTO.CustomerDTO;
+import com.example.order_shipping_service.DTO.DishDTO;
+import com.example.order_shipping_service.DTO.OrderItemRequest;
+import com.example.order_shipping_service.DTO.OrderRequest;
+import com.example.order_shipping_service.DTO.OrderResponse;
+import com.example.order_shipping_service.Listeners.CustomerResponseListener;
+import com.example.order_shipping_service.Listeners.DishResponseListener;
+import com.example.order_shipping_service.Models.Order;
+import com.example.order_shipping_service.Models.OrderStatus;
+import com.example.order_shipping_service.Repo.OrderRepository;
+import com.example.order_shipping_service.config.RabbitConfig;
+import com.example.order_shipping_service.service.OrderService;
+import com.example.order_shipping_service.service.PaymentService;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -28,7 +33,6 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository         orderRepository;
     private final RabbitTemplate          rabbitTemplate;
-    private final ShippingService         shippingService;
     private final CustomerResponseListener custListener;
     private final DishResponseListener     dishListener;
     private final PaymentService  paymentService;
@@ -37,13 +41,11 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     public OrderServiceImpl(OrderRepository orderRepository,
                             RabbitTemplate rabbitTemplate,
-                            ShippingService shippingService,
                             CustomerResponseListener custListener,
                             DishResponseListener dishListener,
                             PaymentServiceImpl paymentService) {
         this.orderRepository = orderRepository;
         this.rabbitTemplate  = rabbitTemplate;
-        this.shippingService = shippingService;
         this.custListener    = custListener;
         this.dishListener    = dishListener;
         this.paymentService  = paymentService;
@@ -65,10 +67,7 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found");
         }
 
-        // 2) Validate shipping region
-        shippingService.validateShippingRegion(req.getShippingCompanyId(), customer.getAddress());
-
-        // 3) Fetch each dish & check stock
+        // 2) Fetch each dish & check stock
         BigDecimal itemsTotal = BigDecimal.ZERO;
         for (OrderItemRequest item : req.getItems()) {
             rabbitTemplate.convertAndSend(
@@ -91,25 +90,22 @@ public class OrderServiceImpl implements OrderService {
             itemsTotal = itemsTotal.add(dish.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
 
-        // 4) Calculate shipping fee + total
-        BigDecimal shippingFee = shippingService.calculateShippingFee(
-                req.getShippingCompanyId(), customer.getAddress()
-        );
-        BigDecimal total = itemsTotal.add(shippingFee);
+        // 3) Calculate total
+        BigDecimal total = itemsTotal;
         if (total.compareTo(MINIMUM_CHARGE) < 0) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Below minimum charge");
         }
 
         // Process payment
-        paymentService.processPayment(req.getOrderId(), itemsTotal, shippingFee);
+        paymentService.processPayment(req.getOrderId(), itemsTotal, BigDecimal.ZERO);
 
-        // 5) Persist order
+        // 4) Persist order
         Order order = new Order();
         order.setTotalAmount(total);
         order.setStatus(OrderStatus.PENDING);
         orderRepository.save(order);
 
-        // 6) Publish order confirmed event
+        // 5) Publish order confirmed event
         rabbitTemplate.convertAndSend(
                 RabbitConfig.ORDER_EXCHANGE,
                 RabbitConfig.ROUTING_ORDER_CONFIRMED,

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Shipping Companies</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+    <h1>Create Shipping Companies</h1>
+    <form action="/admin/shippings/create" method="post">
+        <label for="companyName">Company Name:</label>
+        <input type="text" id="companyName" name="companyName" required>
+
+        <label for="regions">Covered Regions:</label>
+        <select id="regions" name="regions" multiple required>
+            <option value="Region1">Region1</option>
+            <option value="Region2">Region2</option>
+            <option value="Region3">Region3</option>
+        </select>
+
+        <button type="submit">Create</button>
+    </form>
+</body>
+</html>

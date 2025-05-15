@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Dish</title>
+</head>
+<body>
+    <div id="navbar"></div>
+    <script>
+      fetch('/html/fragment/_navbar.html')
+        .then(res => res.text())
+        .then(html => { document.getElementById('navbar').innerHTML = html; });
+    </script>
+
+    <h1>Edit Dish</h1>
+    <form action="/seller/dishes/{id}/edit" method="post">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="Example Dish" required>
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required>Example Description</textarea>
+
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="price" step="0.01" value="10.00" required>
+
+        <label for="stock">Stock:</label>
+        <input type="number" id="stock" name="stock" value="20" required>
+
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>

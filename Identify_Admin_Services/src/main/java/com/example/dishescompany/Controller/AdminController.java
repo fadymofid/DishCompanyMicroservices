@@ -1,12 +1,21 @@
 // src/main/java/com/example/identityadmin/controller/AdminController.java
 package com.example.dishescompany.Controller;
 
-import com.example.dishescompany.DTO.*;
-import com.example.dishescompany.Service.AdminService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.dishescompany.DTO.CreateSellerRequest;
+import com.example.dishescompany.DTO.CustomerDTO;
+import com.example.dishescompany.DTO.SellerAccountDTO;
+import com.example.dishescompany.DTO.SellerDTO;
+import com.example.dishescompany.Service.AdminService;
 
 @RestController
 @RequestMapping("/admin")
@@ -44,23 +53,5 @@ public class AdminController {
     @GetMapping("/sellers")
     public ResponseEntity<List<SellerDTO>> listSellers() {
         return ResponseEntity.ok(adminService.listSellers());
-    }
-
-    /**
-     * Create a new shipping company (delegates to Shipping service).
-     */
-    @PostMapping("/shipping/companies")
-    public ResponseEntity<Void> createShippingCompany(
-            @RequestBody ShippingCompanyRequest req) {
-        adminService.createShippingCompany(req);
-        return ResponseEntity.status(201).build();
-    }
-
-    /**
-     * List all shipping companies.
-     */
-    @GetMapping("/shipping/companies")
-    public ResponseEntity<List<ShippingCompanyResponse>> listShippingCompanies() {
-        return ResponseEntity.ok(adminService.listShippingCompanies());
     }
 }

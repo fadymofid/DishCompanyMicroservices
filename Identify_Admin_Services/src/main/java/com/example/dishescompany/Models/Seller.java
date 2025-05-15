@@ -1,4 +1,3 @@
-// src/main/java/com/example/dishescompany/Models/Seller.java
 package com.example.dishescompany.Models;
 
 import jakarta.persistence.Column;
@@ -21,5 +20,11 @@ public class Seller extends User {
         this.companyName = companyName;
     }
 
-    // getter/setter for companyName
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
 }
