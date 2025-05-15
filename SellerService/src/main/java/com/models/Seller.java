@@ -1,73 +1,26 @@
+// src/main/java/com/example/dishescompany/Models/Seller.java
 package com.models;
 
-import jakarta.persistence.*;
-
-
-import java.util.HashSet;
-import java.util.Set;
+import com.models.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 @Entity
-
 @Table(name = "sellers")
 public class Seller extends User {
-    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
-    private Set<Dish> dishes = new HashSet<>();
-
-    // reference to the company they represent
     @Column(nullable = false)
     private String companyName;
 
-    // JPA-required no-arg constructor
     public Seller() {
+        super();
+        setRole(Role.SELLER);
     }
 
-    // Full constructor
-    public Seller(String username, String password, String email, String companyName) {
-        super(username, password);
-
-
+    public Seller(String username, String password, String companyName) {
+        super(username, password, Role.SELLER);
         this.companyName = companyName;
     }
 
-    // Convenience constructor
-    public Seller(String username, String companyName) {
-
-        this.companyName = companyName;
-    }
-
-    // Bidirectional relationship helpers
-//    public void addDish(Dish dish) {
-//        dishes.add(dish);
-//        dish.setSeller(this);
-//    }
-//
-//    public void removeDish(Dish dish) {
-//        dishes.remove(dish);
-//        dish.setSeller(null);
-//    }
-
-    @java.lang.Override
-    public java.lang.String toString() {
-        return "Seller{" +
-                "dishes=" + dishes +
-                ", companyName='" + companyName + '\'' +
-                '}';
-    }
-// getters/setters
-
-    public Set<Dish> getDishes() {
-        return dishes;
-    }
-
-    public void setDishes(Set<Dish> dishes) {
-        this.dishes = dishes;
-    }
-
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
+    // getter/setter for companyName
 }

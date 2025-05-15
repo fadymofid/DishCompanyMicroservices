@@ -1,19 +1,18 @@
+// src/main/java/com/example/dishescompany/Models/Admin.java
 package com.example.dishescompany.Models;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 @Entity
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "admins")
 public class Admin extends User {
-    // Admin-specific fields (if any) go here
+    public Admin() {
+        super();
+        setRole(Role.ADMIN);
+    }
+
+    public Admin(String username, String password) {
+        super(username, password, Role.ADMIN);
+    }
 }

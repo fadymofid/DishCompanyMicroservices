@@ -3,13 +3,14 @@ package com.example.dishescompany.DTO;
 public class RegisterRequest {
     private String username;
     private String password;
-    private String role;
+    private String address;
+
 
     public RegisterRequest() {}
-    public RegisterRequest(String username, String password, String role) {
+    public RegisterRequest(String username, String password, String address) {
         this.username = username;
         this.password = password;
-        this.role = role;
+        this.address = address;
     }
 
     public String getUsername() {
@@ -28,12 +29,12 @@ public class RegisterRequest {
         this.password = password;
     }
 
-    public String getRole() {
-        return role;
-    }
 
-    public void setRole(String role) {
-        this.role = role;
+    public String getAddress() {
+        return address;
+    }
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
 

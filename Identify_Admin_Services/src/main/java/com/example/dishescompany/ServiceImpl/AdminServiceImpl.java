@@ -1,18 +1,18 @@
 package com.example.dishescompany.ServiceImpl;
 
-
-import com.example.dishescompany.DTO.CustomerDTO;
-import com.example.dishescompany.DTO.SellerAccountDTO;
-import com.example.dishescompany.DTO.SellerDTO;
-import com.example.dishescompany.Models.Customer;
+import com.example.dishescompany.DTO.*;
+import com.example.dishescompany.Models.Role;
 import com.example.dishescompany.Models.Seller;
 import com.example.dishescompany.Repo.CustomerRepository;
-import com.example.dishescompany.Repo.SellerRepository;
+import com.example.dishescompany.Repo.UserRepository;
 import com.example.dishescompany.Service.AdminService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import com.example.dishescompany.config.RabbitConfig;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,45 +20,93 @@ import java.util.stream.Collectors;
 @Service
 public class AdminServiceImpl implements AdminService {
 
-    @Autowired
-    private SellerRepository sellerRepository;
+    private static final int PASSWORD_LENGTH = 8;
+
+    private final UserRepository    userRepo;
+    private final CustomerRepository customerRepo;
+    private final RabbitTemplate    rabbitTemplate;
 
     @Autowired
-    private CustomerRepository customerRepository;
-
-
-
-    private static final int PASSWORD_LENGTH = 12;
+    public AdminServiceImpl(UserRepository userRepo,
+                            CustomerRepository customerRepo,
+                            RabbitTemplate rabbitTemplate) {
+        this.userRepo        = userRepo;
+        this.customerRepo    = customerRepo;
+        this.rabbitTemplate  = rabbitTemplate;
+    }
 
     @Override
-    public List<SellerAccountDTO> createSellerAccounts(List<String> companyNames) {
-        return companyNames.stream().map(name -> {
-            // generate username and raw password
-            String username = name.toLowerCase().replaceAll("\\s+", "_");
-            String rawPassword = RandomStringUtils.randomAlphanumeric(PASSWORD_LENGTH);
+    public SellerAccountDTO createSellerAccount(CreateSellerRequest req) {
+        // 1) validate input
+        if (req.getCompanyName() == null || req.getCompanyName().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Company name must be provided");
+        }
+        if (req.getUsername() == null || req.getUsername().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Username must be provided");
+        }
+        // 2) ensure username not used
+        if (userRepo.findByUsername(req.getUsername()) != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Username already exists");
+        }
 
+        // 3) generate password & persist locally
+        String rawPassword = RandomStringUtils.randomAlphanumeric(PASSWORD_LENGTH);
+        SellerAccountDTO dto = new SellerAccountDTO(
+                req.getCompanyName(),
+                req.getUsername(),
+                rawPassword
+        );
+        // we store minimal credential info here
+        Seller s = new Seller(req.getUsername(), rawPassword, req.getCompanyName());
+        userRepo.save(s);
 
-            Seller seller = new Seller();
-            seller.setCompanyName(name);
-            seller.setUsername(username);
-            seller.setPassword(rawPassword);
-            sellerRepository.save(seller);
+        // 4) publish a "seller.created" event
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.ADMIN_EXCHANGE,
+                RabbitConfig.ROUTING_CREATE_SELLER,
+                dto
+        );
 
-            return new SellerAccountDTO(name, username, rawPassword);
-        }).collect(Collectors.toList());
+        return dto;
     }
 
     @Override
     public List<CustomerDTO> listCustomers() {
-        return customerRepository.findAll().stream()
-                .map(c -> new CustomerDTO(c.getId(), c.getUsername(), c.getAddress()))
+        return customerRepo.findAll().stream()
+                .map(c -> new CustomerDTO(
+                        c.getId(),
+                        c.getUsername(),
+                        c.getAddress()))
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<SellerDTO> listSellers() {
-        return sellerRepository.findAll().stream()
-                .map(s -> new SellerDTO(s.getId(), s.getCompanyName(), s.getUsername()))
+        return userRepo.findByRole(Role.SELLER).stream()
+                .map(u -> new SellerDTO(u.getId(), ((Seller)u).getCompanyName(), u.getUsername()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void createShippingCompany(ShippingCompanyRequest req) {
+        if (req.getName() == null || req.getName().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Shipping company name must be provided");
+        }
+        // publish "shipping.create" event
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.ADMIN_EXCHANGE,
+                RabbitConfig.ROUTING_CREATE_SHIPPING,
+                req
+        );
+    }
+
+    @Override
+    public List<ShippingCompanyResponse> listShippingCompanies() {
+        // Similar to sellers: return from a local read‐model or via request/response pattern
+        return List.of(); // placeholder
     }
 }

@@ -1,15 +1,12 @@
-package com.EJB;
+// SellerService.java (Remote Interface)
+package com.ejb;
 
-import com.models.Dish;
+import com.models.OrderItem;
 import jakarta.ejb.Remote;
 import java.util.List;
 
 @Remote
 public interface SellerService {
-
-    List<Dish> getMyDishes(Long sellerId);
-
-    void addDish(Long sellerId, Dish dish);
-
-    void updateDish(Long sellerId, Dish dish);
+    void addOrderItem(OrderItem item);
+    List<OrderItem> getOrderItemsByOrderId(Long orderId);
 }

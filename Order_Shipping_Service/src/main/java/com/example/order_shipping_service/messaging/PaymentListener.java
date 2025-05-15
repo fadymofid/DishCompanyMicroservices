@@ -1,1 +1,0 @@
-package com.example.order_shipping_service.messaging;

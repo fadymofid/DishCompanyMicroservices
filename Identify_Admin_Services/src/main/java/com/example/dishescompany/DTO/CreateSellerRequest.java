@@ -18,6 +18,7 @@ public class CreateSellerRequest {
         this.username = username;
 
     }
+  public CreateSellerRequest() {}
 
     public String getCompanyName() {
         return companyName;

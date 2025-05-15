@@ -13,7 +13,12 @@ public class CreateSellerRequest {
         this.password = password;
     }
 
+    public CreateSellerRequest(String companyName, String username) {
+        this.companyName = companyName;
+        this.username = username;
 
+    }
+  public CreateSellerRequest() {}
 
     public String getCompanyName() {
         return companyName;

@@ -1,4 +1,4 @@
-package com.EJB;
+package com.ejb;
 
 import com.DAO.DishDAO;
 import com.DAO.SellerDAO;

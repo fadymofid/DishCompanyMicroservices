@@ -1,25 +1,25 @@
 package com.example.dishescompany.Service;
 
-import com.example.dishescompany.DTO.CustomerDTO;
-import com.example.dishescompany.DTO.SellerAccountDTO;
-import com.example.dishescompany.DTO.SellerDTO;
+import com.example.dishescompany.DTO.*;
+
+import java.util.List;
+
 
 import java.util.List;
 
 public interface AdminService {
-    /**
-     * Create seller representative accounts for a list of unique company names.
-     * Returns generated username/password pairs.
-     */
-    List<SellerAccountDTO> createSellerAccounts(List<String> companyNames);
 
-    /**
-     * List all registered customers.
-     */
+    SellerAccountDTO createSellerAccount (CreateSellerRequest req);
+
+    /** List all customers (from Customer microservice) */
     List<CustomerDTO> listCustomers();
 
-    /**
-     * List all seller representative accounts.
-     */
+    /** List all seller domain accounts (from Seller microservice) */
     List<SellerDTO> listSellers();
+
+    /** Create a new shipping company via Shipping microservice */
+    void createShippingCompany(ShippingCompanyRequest req);
+
+    /** List all shipping companies (from Shipping microservice) */
+    List<ShippingCompanyResponse> listShippingCompanies();
 }

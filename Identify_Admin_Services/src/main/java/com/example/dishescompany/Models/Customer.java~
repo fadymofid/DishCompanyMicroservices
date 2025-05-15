@@ -15,13 +15,19 @@ import java.util.Set;
 @Entity
 @Table(name = "customers")
 public class Customer extends User {
-    @Column(nullable = false, unique = true,name = "address")
+    @Column(nullable = false)
     private String address;
 
-    public Customer(String username, String password, String id, String address) {
-        super(username, password, id);
+    public Customer() {
+        super();
+        setRole(Role.CUSTOMER);
+    }
+
+    public Customer(String username, String password, String address) {
+        super(username, password, Role.CUSTOMER);
         this.address = address;
     }
+   
 
     public Customer(String address) {
         this.address = address;

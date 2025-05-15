@@ -10,9 +10,9 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    
     @JoinColumn(name = "order_id")
-    private Order order;
+    private int order_id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dish_id")
@@ -40,14 +40,15 @@ public class OrderItem {
     public void setId(Long id) {
         this.id = id;
     }
-
-    public Order getOrder() {
-        return order;
+    public int getOrder_id() {
+        return order_id;
     }
 
-    public void setOrder(Order order) {
-        this.order = order;
+    public void setOrder_id(int order_id) {
+        this.order_id = order_id;
     }
+
+   
 
     public Dish getDish() {
         return dish;

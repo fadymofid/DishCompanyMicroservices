@@ -3,7 +3,7 @@ package com.example.dishescompany.ServiceImpl;
 
 import com.example.dishescompany.DTO.LoginRequest;
 import com.example.dishescompany.DTO.RegisterRequest;
-import com.example.dishescompany.Models.Credential;
+import com.example.dishescompany.Models.Seller;
 import com.example.dishescompany.Repo.CredentialRepository;
 import com.example.dishescompany.Repo.CustomerRepository;
 import com.example.dishescompany.Models.Customer;
@@ -34,8 +34,8 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        // 2. Store customer credentials with role = "CUSTOMER"
-        Credential cred = new Credential(
+// 2. Persist the credential (this step was missing)
+        Seller cred = new Seller(
                 req.getUsername(),
                 req.getPassword(),
                 "CUSTOMER"
@@ -45,24 +45,26 @@ public class AuthServiceImpl implements AuthService {
         // 3. Create and store customer domain object
         Customer customer = new Customer();
         customer.setUsername(req.getUsername());
+        customer.setPassword(req.getPassword());
         customer.setAddress(req.getAddress() != null ? req.getAddress() : "");
         customerRepo.save(customer);
     }
 
     @Override
-    public void login(LoginRequest request) {
-        Credential credential = credentialRepo.findByUsername(request.getUsername());
+    public String login(LoginRequest request) {
+        Seller seller = credentialRepo.findByUsername(request.getUsername());
 
         // 1. Check username/password match
-        if (credential == null || !credential.getPassword().equals(request.getPassword())) {
+        if (seller == null || !seller.getPassword().equals(request.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
 
         // 2. Validate role match
-        if (!credential.getRole().equalsIgnoreCase(request.getRole())) {
+        if (!seller.getRole().equalsIgnoreCase(request.getRole())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid role for this account");
         }
 
+        return seller.getRole().toUpperCase();
     }
 }
 

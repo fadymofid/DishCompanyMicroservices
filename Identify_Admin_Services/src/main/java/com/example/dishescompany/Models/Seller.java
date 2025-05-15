@@ -1,27 +1,25 @@
+// src/main/java/com/example/dishescompany/Models/Seller.java
 package com.example.dishescompany.Models;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.util.HashSet;
-import java.util.Set;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 @Entity
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "sellers")
 public class Seller extends User {
-    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
-    private Set<Dish> dishes = new HashSet<>();
-
-    // reference to the company they represent
     @Column(nullable = false)
     private String companyName;
 
-    // getters/setters
+    public Seller() {
+        super();
+        setRole(Role.SELLER);
+    }
+
+    public Seller(String username, String password, String companyName) {
+        super(username, password, Role.SELLER);
+        this.companyName = companyName;
+    }
+
+    // getter/setter for companyName
 }

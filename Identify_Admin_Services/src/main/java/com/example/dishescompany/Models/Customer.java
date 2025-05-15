@@ -11,18 +11,35 @@ import java.util.Set;
 
 
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+
 @Entity
 @Table(name = "customers")
 public class Customer extends User {
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private Set<Order> orders = new HashSet<>();
-
-    // shipping address, contact, etc.
+    @Column(nullable = false)
     private String address;
+
+    public Customer() {
+        super();
+        setRole(Role.CUSTOMER);
+    }
+
+    public Customer(String username, String password, String address) {
+        super(username, password, Role.CUSTOMER);
+        this.address = address;
+    }
+
+
+    public Customer(String address) {
+        this.address = address;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 
     // getters/setters
 }

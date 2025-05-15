@@ -1,62 +1,53 @@
+// src/main/java/com/example/dishescompany/ServiceImpl/AuthServiceImpl.java
 package com.example.dishescompany.ServiceImpl;
 
 import com.example.dishescompany.DTO.LoginRequest;
 import com.example.dishescompany.DTO.RegisterRequest;
 import com.example.dishescompany.Models.Customer;
+import com.example.dishescompany.Models.Role;
 import com.example.dishescompany.Models.Seller;
-import com.example.dishescompany.Repo.CustomerRepository;
-import com.example.dishescompany.Repo.SellerRepository;
+import com.example.dishescompany.Models.User;
 import com.example.dishescompany.Repo.UserRepository;
 import com.example.dishescompany.Service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private CustomerRepository customerRepository;
-    @Autowired private SellerRepository sellerRepository;
+    private final UserRepository userRepo;
 
-    @Override
-    public void register(RegisterRequest req) {
-        if (userRepository.findByUsername(req.getUsername()) != null) {
-            throw new IllegalArgumentException("Username already exists");
-        }
-
-        switch (req.getRole().toUpperCase()) {
-            case "CUSTOMER":
-                Customer customer = new Customer();
-                customer.setUsername(req.getUsername());
-                customer.setPassword(req.getPassword()); // No encoding
-                customer.setAddress("");
-                customerRepository.save(customer);
-                break;
-            case "SELLER":
-                Seller seller = new Seller();
-                seller.setUsername(req.getUsername());
-                seller.setPassword(req.getPassword()); // No encoding
-                seller.setCompanyName("");
-                sellerRepository.save(seller);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid role");
-        }
+    @Autowired
+    public AuthServiceImpl(UserRepository userRepo) {
+        this.userRepo = userRepo;
     }
 
     @Override
-    public void login(LoginRequest req) {
-        // Check against both repositories (or only one, depending on your app)
-        Customer customer = customerRepository.findByUsername(req.getUsername());
-        if (customer != null && customer.getPassword().equals(req.getPassword())) {
-            return; // Login successful
+    public void register(RegisterRequest req) {
+        if (userRepo.findByUsername(req.getUsername()) != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Username already exists");
         }
 
-        Seller seller = sellerRepository.findByUsername(req.getUsername());
-        if (seller != null && seller.getPassword().equals(req.getPassword())) {
-            return; // Login successful
-        }
+        // Always register as CUSTOMER
+        Customer cust = new Customer(
+                req.getUsername(),
+                req.getPassword(),
+                req.getAddress() != null ? req.getAddress() : ""
+        );
+        userRepo.save(cust);
+    }
 
-        throw new IllegalArgumentException("Invalid username or password");
+    @Override
+    public String login(LoginRequest req) {
+        User u = userRepo.findByUsername(req.getUsername());
+        if (u == null || !u.getPassword().equals(req.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        }
+        // you may want to check req.getRole() vs u.getRole()
+        return u.getRole().name();
     }
 }

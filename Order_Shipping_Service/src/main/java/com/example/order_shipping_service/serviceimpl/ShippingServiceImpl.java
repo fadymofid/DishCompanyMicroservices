@@ -1,5 +1,6 @@
 package com.example.order_shipping_service.serviceimpl;
 
+import com.example.order_shipping_service.config.RabbitConfig;
 import com.example.order_shipping_service.DTO.ShippingCompanyRequest;
 import com.example.order_shipping_service.DTO.ShippingCompanyResponse;
 import com.example.order_shipping_service.Models.ShippingCompany;
@@ -33,14 +34,25 @@ public class ShippingServiceImpl implements ShippingService {
     public boolean validateShippingRegion(Long companyId, String region) {
         ShippingCompany company = shippingCompanyRepository.findById(companyId)
                 .orElseThrow(() -> {
-                    rabbitTemplate.convertAndSend("order-exchange", "shipping.failed", "Company not found");
-                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Shipping company not found");
+                    // Publish failure on the order-exchange:
+                    rabbitTemplate.convertAndSend(
+                            RabbitConfig.ORDER_EXCHANGE,
+                            "shipping.failed",
+                            "Company not found: " + companyId
+                    );
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Shipping company not found");
                 });
 
         boolean valid = company.getCoverageRegions().contains(region);
         if (!valid) {
-            rabbitTemplate.convertAndSend("order-exchange", "shipping.failed", "Region not covered");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Shipping region not covered");
+            rabbitTemplate.convertAndSend(
+                    RabbitConfig.ORDER_EXCHANGE,
+                    "shipping.failed",
+                    "Region not covered by company " + company.getName()
+            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Shipping region not covered");
         }
         return true;
     }
@@ -49,22 +61,27 @@ public class ShippingServiceImpl implements ShippingService {
     @Transactional
     public ShippingCompanyResponse createShippingCompany(ShippingCompanyRequest request) {
         if (request.getName() == null || request.getName().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name must not be blank");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Name must not be blank");
         }
 
         ShippingCompany company = new ShippingCompany();
         company.setName(request.getName());
         company.setCoverageRegions(request.getCoverageRegions());
-        ShippingCompany savedCompany = shippingCompanyRepository.save(company);
+        ShippingCompany saved = shippingCompanyRepository.save(company);
 
-        // Optionally notify via RabbitMQ that a new company was created
+        // Notify via RabbitMQ that a new company was created
         rabbitTemplate.convertAndSend(
-                "order-exchange",
+                RabbitConfig.ORDER_EXCHANGE,
                 "shipping.created",
-                String.format("Created shipping company '%s'", savedCompany.getName())
+                "Created shipping company '" + saved.getName() + "' (id=" + saved.getId() + ")"
         );
 
-        return new ShippingCompanyResponse(savedCompany.getId(), savedCompany.getName(), savedCompany.getCoverageRegions());
+        return new ShippingCompanyResponse(
+                saved.getId(),
+                saved.getName(),
+                saved.getCoverageRegions()
+        );
     }
 
     @Override
