@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+            <option value="admin">Admin</option>
+            <option value="seller">Seller</option>
+            <option value="customer">Customer</option>
+        </select><br><br>
+        <input type="text" id="username" placeholder="Username" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+    <div style="margin-top:2rem;">
+      <button onclick="window.location.href='register.html'" class="btn btn-primary">Register</button>
+      <button onclick="window.location.href='home.html'" class="btn btn-secondary">Back to Home</button>
+    </div>
+    <script src="../js/app.js"></script>
+    <script>
+    document.getElementById('loginForm').onsubmit = function(e) {
+      e.preventDefault();
+      const role = document.getElementById('role').value;
+      // Here you would do your login logic (API call etc.)
+      // On success, redirect to the correct dashboard/home
+      if (role === 'admin') {
+        window.location.href = 'admin/admin_home.html';
+      } else if (role === 'seller') {
+        window.location.href = 'seller/dashboard.html';
+      } else if (role === 'customer') {
+        window.location.href = 'customer/orders.html';
+      }
+    };
+    </script>
+</body>
+</html>

@@ -12,6 +12,17 @@
         .then(res => res.text())
         .then(html => { document.getElementById('navbar').innerHTML = html; });
     </script>
+    <div class="container mt-4">
+      <h1>Seller Dashboard</h1>
+      <div class="btn-group-vertical" style="width: 100%; max-width: 400px;">
+        <button onclick="window.location.href='add_dish.html'" class="btn btn-primary mb-2">Add Dish</button>
+        <button onclick="window.location.href='edit_dish.html'" class="btn btn-primary mb-2">Edit Dish</button>
+        <button onclick="window.location.href='sold.html'" class="btn btn-primary mb-2">Sold Dishes</button>
+        <button onclick="window.location.href='payment_status.html'" class="btn btn-danger mb-2">Payment Status</button>
+        <button onclick="window.location.href='event_logs.html'" class="btn btn-warning mb-2">Event Logs</button>
+        <button onclick="window.location.href='../home.html'" class="btn btn-secondary mt-3">Back to Home</button>
+      </div>
+    </div>
     <h1>My Dishes</h1>
     <table>
         <thead>

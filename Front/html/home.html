@@ -23,17 +23,18 @@
       .role-section h2 {
         margin-top: 0;
       }
-      .role-section a {
+      .role-section button {
         display: inline-block;
         margin: 0.5rem 0.5rem 0 0;
         padding: 0.5rem 1rem;
         background: #007bff;
         color: #fff;
+        border: none;
         border-radius: 4px;
-        text-decoration: none;
+        cursor: pointer;
         transition: background 0.2s;
       }
-      .role-section a:hover {
+      .role-section button:hover {
         background: #0056b3;
       }
     </style>
@@ -46,21 +47,10 @@
         .then(html => { document.getElementById('navbar').innerHTML = html; });
     </script>
     <h1 style="text-align:center; margin-top:2rem;">Welcome to Dish Company</h1>
-    <p style="text-align:center;">Please log in or register as your role:</p>
-    <div class="role-container">
-      <div class="role-section">
-        <h2>Admin</h2>
-        <a href="/html/admin/admin_home.html">Admin Login</a>
-      </div>
-      <div class="role-section">
-        <h2>Seller</h2>
-        <a href="/html/seller/dashboard.html">Seller Login</a>
-      </div>
-      <div class="role-section">
-        <h2>Customer</h2>
-        <a href="/html/customer/login.html">Customer Login</a>
-        <a href="/html/customer/register.html">Customer Register</a>
-      </div>
+    <p style="text-align:center;">Please log in or register. Select your role on the next page:</p>
+    <div class="role-container" style="justify-content:center;">
+      <button onclick="window.location.href='login.html'" class="btn btn-primary" style="margin:1rem;">Login</button>
+      <button onclick="window.location.href='register.html'" class="btn btn-secondary" style="margin:1rem;">Register</button>
     </div>
     <script src="../../js/app.js"></script>
 </body>
