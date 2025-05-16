@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Failures - Admin Notification</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <h1>Payment Failure Notifications</h1>
+    <button onclick="window.location.href='admin_home.html'">Back to Admin Home</button>
+    <div id="payment-failures-container">
+        <!-- Payment failure events will be listed here -->
+    </div>
+    <script src="../../js/app.js"></script>
+    <script>
+    // Example: Fetch payment failures from backend (to be implemented)
+    fetch('http://localhost:8081/admin/payment-failures')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('payment-failures-container');
+        if (data.length === 0) {
+          container.innerHTML = '<p>No payment failures at this time.</p>';
+        } else {
+          container.innerHTML = '<ul>' + data.map(failure => `<li>Order ID: ${failure.orderId}, Reason: ${failure.reason}, Time: ${failure.timestamp}</li>`).join('') + '</ul>';
+        }
+      })
+      .catch(err => {
+        document.getElementById('payment-failures-container').innerHTML = '<p>Error loading payment failures.</p>';
+      });
+    </script>
+</body>
+</html>
