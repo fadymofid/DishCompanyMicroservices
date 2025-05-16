@@ -1,8 +1,8 @@
-// src/main/java/com/example/dishescompany/config/RabbitConfig.java
 package com.example.dishescompany.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
@@ -17,6 +17,15 @@ public class RabbitConfig {
     public static final String CUSTOMER_RESPONSE_QUEUE= "customer.response.queue";
     public static final String ADMIN_EXCHANGE           = "admin-exchange";
     public static final String ROUTING_CREATE_SELLER    = "seller.create";
+
+    @Bean
+    public TopicExchange adminExchange() {
+        return ExchangeBuilder
+                .topicExchange(ADMIN_EXCHANGE)
+                .durable(true)
+                .build();
+    }
+    
     @Bean
     public TopicExchange customerExchange() {
         return ExchangeBuilder
@@ -54,9 +63,51 @@ public class RabbitConfig {
                 .to(customerExchange)
                 .with("customer.response");
     }
+
+    @Bean
+    public Queue adminErrorLogQueue() {
+        return new Queue("admin.error.log.queue", true);
+    }
+
+    @Bean
+    public Binding adminErrorLogBinding(Queue adminErrorLogQueue, TopicExchange logsExchange) {
+        return BindingBuilder.bind(adminErrorLogQueue).to(logsExchange).with("#_Error");
+    }
+
+    @Bean
+    public Queue adminPaymentFailedQueue() {
+        return new Queue("admin.payment.failed.queue", true);
+    }
+
+    @Bean
+    public Binding adminPaymentFailedBinding(Queue adminPaymentFailedQueue, DirectExchange paymentsExchange) {
+        return BindingBuilder.bind(adminPaymentFailedQueue).to(paymentsExchange).with("payment.failed");
+    }
+
+    @Bean
+    public DirectExchange paymentsExchange() {
+        return new DirectExchange("payments", true, false);
+    }
+
+    // This queue is for the Seller Service to consume seller creation events
+    @Bean
+    public Queue sellerCreatedQueue() {
+        return new Queue("seller.created.queue", true);
+    }
+
+    @Bean
+    public Binding sellerCreatedBinding(Queue sellerCreatedQueue, TopicExchange adminExchange) {
+        return BindingBuilder
+                .bind(sellerCreatedQueue)
+                .to(adminExchange)
+                .with(ROUTING_CREATE_SELLER);
+    }
+
+    @Bean
+    public TopicExchange logsExchange() {
+        return ExchangeBuilder
+                .topicExchange("logs")
+                .durable(true)
+                .build();
+    }
 }
-
-
-
-
-

@@ -1,18 +1,18 @@
 // SellerServiceBean.java (Stateless EJB)
 package com.example.seller.ejb;
 
+import java.sql.SQLException;
+import java.util.List;
+
 import com.example.seller.DAO.DishDAO;
 import com.example.seller.DAO.OrderItemDAO;
 import com.example.seller.DAO.SellerDAO;
 import com.example.seller.models.Dish;
 import com.example.seller.models.OrderItem;
 import com.example.seller.models.Seller;
+
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
-import com.example.seller.DAO.SellerDTO;
-
-import java.sql.SQLException;
-import java.util.List;
 
 @Stateless
 public class SellerServiceBean implements SellerService {
@@ -26,12 +26,20 @@ public class SellerServiceBean implements SellerService {
     private SellerDAO sellerDAO;
     @Override
     public void addOrderItem(OrderItem item) {
-        orderItemDAO.save(item);
+        try {
+            orderItemDAO.save(item);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error saving order item", e);
+        }
     }
 
     @Override
     public List<OrderItem> getOrderItemsByOrderId(Long orderId) {
-        return orderItemDAO.findByOrderId(orderId);
+        try {
+            return orderItemDAO.findByOrderId(orderId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error retrieving order items by order ID", e);
+        }
     }
 
     @Override
