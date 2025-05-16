@@ -1,0 +1,46 @@
+package com.ejb;
+
+import com.DAO.OrderItemDAO;
+import com.DAO.DishDAO;
+import com.models.OrderItem;
+import com.models.Dish;
+import jakarta.ejb.ActivationConfigProperty;
+import jakarta.ejb.MessageDriven;
+import jakarta.jms.Message;
+import jakarta.jms.MessageListener;
+import jakarta.jms.TextMessage;
+
+
+@MessageDriven(
+    activationConfig = {
+        @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
+        @ActivationConfigProperty(propertyName = "destination",     propertyValue = "order.confirmed.queue")
+    }
+)
+public class OrderConfirmedListener implements MessageListener {
+
+    @Inject
+    private DishDAO dishDAO;
+
+    @Inject
+    private OrderItemDAO orderItemDAO;
+
+    @Override
+    public void onMessage(Message message) {
+        try {
+            String payload = ((TextMessage) message).getText();
+            Long orderId = Long.parseLong(payload);
+            // Fetch all OrderItems for this order
+            for (OrderItem item : orderItemDAO.findByOrder(orderId)) {
+                Dish dish = dishDAO.find(item.getDish().getId());
+                // Deduct stock
+                dish.setStock(dish.getStock() - item.getQuantity());
+                dishDAO.update(dish);
+            }
+            // optionally log success
+        } catch (Exception e) {
+            // log or handle
+            e.printStackTrace();
+        }
+    }
+}

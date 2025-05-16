@@ -1,7 +1,7 @@
 // src/main/java/com/example/dishescompany/Models/Seller.java
-package com.models;
+package com.example.seller.models;
 
-import com.models.User;
+import com.example.seller.models.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
