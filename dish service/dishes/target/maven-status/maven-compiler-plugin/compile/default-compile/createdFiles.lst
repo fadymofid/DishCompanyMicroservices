@@ -1,0 +1,14 @@
+service2\Controller\SoldDishController.class
+service2\Main.class
+service2\Controller\CORSFilter.class
+service2\Model\SoldDish.class
+service2\Model\Dish.class
+service2\StockCheckConsumer.class
+service2\Controller\DishController.class
+service2\Services\SoldDishService.class
+service2\DAL\DishDAL.class
+service2\DAL\SoldDishDAL.class
+service2\Services\DishService.class
+service2\DAL\DatabaseConnection.class
+service2\RestApplication.class
+service2\Controller\DishController$DishStockRequest.class
