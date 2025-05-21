@@ -1,0 +1,25 @@
+package com.homemade.ordersAndShipmentService.listener;
+
+import com.homemade.ordersAndShipmentService.dto.StockCheckResponse;
+import com.homemade.ordersAndShipmentService.services.OrderService;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class StockCheckResponseListener {
+
+    private final OrderService orderService;
+
+    public StockCheckResponseListener(OrderService orderService) {
+        this.orderService = orderService;
+    }
+
+    @RabbitListener(queues = "stock_check_response_queue")
+    public void receiveStockCheckResponse(StockCheckResponse response) {
+        System.out.println(" [✓] Received StockCheckResponse:");
+        System.out.println("     Correlation ID: " + response.getCorrelationId());
+        System.out.println("     Available: " + response.isAvailable());
+
+        orderService.handleStockCheckResult(response);
+    }
+}

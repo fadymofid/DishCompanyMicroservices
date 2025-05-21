@@ -44,6 +44,8 @@ public class OrderService {
         rabbitTemplate.convertAndSend(stockCheckQueue, scReq);
 
         StockCheckResponse scResp = receiveWithTimeout(stockCheckResponseQueue, correlationId, StockCheckResponse.class);
+        System.out.println(">>> SC_RESP = " + scResp);  // <— DEBUG
+
         if (scResp == null) {
             return new OrderResponse(null, OrderStatus.PENDING, "Stock service timeout");
         }
@@ -54,6 +56,7 @@ public class OrderService {
 
         // 2) Create order in PENDING
         Order order = persistNewOrder(req);
+        System.out.println(">>> Persisting order: " + order);
 
         // 3) Payment
         PaymentRequest payReq = new PaymentRequest(correlationId, order.getId(), order.getTotalPrice());
@@ -91,17 +94,18 @@ public class OrderService {
     }
 
     private Order persistNewOrder(OrderRequest req) {
-        List<OrderItem> items = req.getItems();
-        double total = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        Order o = new Order();
-        o.setCustomerId(req.getCustomerId());
-        o.setTotalPrice(total);
-        o.setStatus(OrderStatus.PENDING);
-        o.setCreatedAt(LocalDateTime.now());
-        items.forEach(i -> i.setOrder(o));
-        o.setItems(items);
-        return orderRepo.save(o);
-    }
+    List<OrderItem> items = req.getItems();
+    double total = items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+    Order o = new Order();
+    o.setCustomerId(req.getCustomerId());
+    o.setTotalPrice(total);
+    o.setStatus(OrderStatus.PENDING);
+    o.setCreatedAt(LocalDateTime.now());
+    o.setDeliveryAddress(req.getAddress()); // Set the address
+    items.forEach(i -> i.setOrder(o));
+    o.setItems(items);
+    return orderRepo.save(o);
+}
 
     private void notifyCustomer(Long customerId, Long orderId, OrderStatus status, String message) {
         try {
@@ -149,6 +153,20 @@ public class OrderService {
         if (order != null) {
             order.setStatus(OrderStatus.COMPLETED);
             orderRepo.save(order);
+        }
+    }
+    public void handleStockCheckResult(StockCheckResponse response) {
+        String correlationId = response.getCorrelationId();
+        boolean available = response.isAvailable();
+
+        System.out.println("Handling stock check result for correlationId: " + correlationId);
+
+        if (available) {
+            // Save order to DB using saved request (you need to store pending orders using the correlationId)
+            System.out.println("Stock available. Proceeding to save order...");
+        } else {
+            // Handle failed order (notify customer, etc.)
+            System.out.println("Stock unavailable. Cancelling order.");
         }
     }
 }

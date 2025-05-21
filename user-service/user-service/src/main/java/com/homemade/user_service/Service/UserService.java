@@ -1,13 +1,15 @@
 package com.homemade.user_service.Service;
 
-import com.homemade.user_service.Repositories.UserRepository;
-import com.homemade.user_service.entity.User;
-import com.homemade.user_service.entity.UserRole;
+import java.util.List;
+import java.util.Random;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.homemade.user_service.Repositories.UserRepository;
+import com.homemade.user_service.entity.User;
+import com.homemade.user_service.entity.UserRole;
 
 @Service
 public class UserService {
@@ -29,12 +31,27 @@ public class UserService {
         return true;
     }
 
-    // Generate a unique password for SELLER role users based on the id of the last inserted user
-    public String generateUniqueSellerPassword() {
-        User lastUser = userRepository.findTopByOrderByIdDesc(); 
-        long lastUserId = (lastUser != null) ? lastUser.getId() : 0; 
-        return "sellerPassword" + (lastUserId + 1); 
+  public String generateUniqueSellerPassword() {
+    User lastUser = userRepository.findTopByOrderByIdDesc();
+    long sellerId = (lastUser != null) ? lastUser.getId() + 1 : 1;
+    
+    String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    Random random = new Random();
+    StringBuilder password = new StringBuilder();
+    
+    // Add prefix
+    password.append("Seller");
+    
+    // Add seller ID for uniqueness
+    password.append(sellerId);
+    
+    // Add 3 random characters
+    for (int i = 0; i < 3; i++) {
+        password.append(chars.charAt(random.nextInt(chars.length())));
     }
+    
+    return password.toString();
+}
 
     // Get user by id
     public User getUserById(Long id) {

@@ -7,7 +7,16 @@ import com.homemade.ordersAndShipmentService.entity.OrderItem;
 public class OrderRequest {
     private Long customerId;
     private List<OrderItem> items;
+private String address; // Add this field
 
+    // Add getter/setter
+    public String getAddress() {
+        return address;
+    }
+    
+    public void setAddress(String address) {
+        this.address = address;
+    }
     public Long getCustomerId() {
         return customerId;
     }

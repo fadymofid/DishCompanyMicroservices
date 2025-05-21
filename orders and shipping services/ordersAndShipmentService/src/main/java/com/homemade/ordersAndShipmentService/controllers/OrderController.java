@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.homemade.ordersAndShipmentService.dto.OrderRequest;
 import com.homemade.ordersAndShipmentService.dto.OrderResponse;
 import com.homemade.ordersAndShipmentService.entity.Order;
-import com.homemade.ordersAndShipmentService.notifications.Notification;
+import com.homemade.ordersAndShipmentService.dto.Notification;
 import com.homemade.ordersAndShipmentService.services.OrderService;
 
 @RestController
@@ -29,12 +30,22 @@ public class OrderController {
     @PostMapping("/create")
     public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest req) {
         OrderResponse resp = orderService.processOrder(req);
-        if (resp.getStatus() == com.homemade.ordersAndShipmentService.entity.OrderStatus.CONFIRMED) {
-            return ResponseEntity.ok(resp);
-        } else if (resp.getStatus() == com.homemade.ordersAndShipmentService.entity.OrderStatus.CANCELLED) {
-            return ResponseEntity.badRequest().body(resp);
-        } else {
-            return ResponseEntity.status(500).body(resp);
+
+        switch (resp.getStatus()) {
+            case CONFIRMED:
+                return ResponseEntity.ok(resp);
+            case PENDING:
+                return ResponseEntity
+                        .status(HttpStatus.ACCEPTED)
+                        .body(resp);
+            case CANCELLED:
+                return ResponseEntity
+                        .status(HttpStatus.CONFLICT)   // or BAD_REQUEST
+                        .body(resp);
+            default:
+                return ResponseEntity
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(resp);
         }
     }
 

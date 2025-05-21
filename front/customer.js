@@ -1,25 +1,28 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // User authentication check
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     const welcome = document.getElementById('customerWelcome');
     if (welcome && username) {
         welcome.textContent = `Welcome, ${username}!`;
     }
+
+    // Fetch and display user info
     if (userId) {
         try {
             const resp = await fetch(`http://localhost:8081/api/users/id/${userId}`);
             if (resp.ok) {
                 const user = await resp.json();
-                const welcome = document.getElementById('customerWelcome');
                 if (welcome) {
                     welcome.textContent = `Welcome, ${user.username}!`;
                 }
             }
         } catch (e) {
-            //handle error
+            console.error('Error fetching user info:', e);
         }
     }
 
+    // Initialize DOM elements
     const ordersList = document.getElementById('ordersList');
     const fetchOrdersBtn = document.getElementById('fetchOrders');
     const allDishesList = document.getElementById('allDishesList');
@@ -29,15 +32,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     const currentOrdersList = document.getElementById('currentOrdersList');
     const fetchPastOrdersBtn = document.getElementById('fetchPastOrders');
     const pastOrdersList = document.getElementById('pastOrdersList');
-
+    const orderItemsContainer = document.getElementById('orderItemsContainer');
+    const addOrderItemBtn = document.getElementById('addOrderItemBtn');
+    const makeOrderForm = document.getElementById('makeOrderForm');
+    const addressInput = document.getElementById('shippingLocation');
+    const region = addressInput.value.trim();
+    // Fetch available dishes
     if (fetchOrdersBtn) {
         fetchOrdersBtn.addEventListener('click', async function() {
             try {
-                const response = await fetch('http://localhost:8080/dishes/api/dishes', {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes', {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' }
                 });
                 if (response.ok) {
                     const dishes = await response.json();
@@ -51,14 +57,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Fetch all dishes
     if (fetchAllDishesBtn) {
         fetchAllDishesBtn.addEventListener('click', async function() {
             try {
-                const response = await fetch('http://localhost:8080/dishes/api/dishes/all', {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes/all', {
                     method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: { 'Accept': 'application/json' }
                 });
                 if (response.ok) {
                     const dishes = await response.json();
@@ -72,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Fetch current orders
     if (fetchCurrentOrdersBtn && userId) {
         fetchCurrentOrdersBtn.addEventListener('click', async function() {
             try {
@@ -88,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Fetch past orders
     if (fetchPastOrdersBtn && userId) {
         fetchPastOrdersBtn.addEventListener('click', async function() {
             try {
@@ -104,12 +111,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Logout functionality
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
             window.location.href = 'login.html';
         });
     }
 
+    // Display functions
     function displayDishes(dishes) {
         ordersList.innerHTML = '';
         if (!dishes || dishes.length === 0) {
@@ -119,7 +130,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         dishes.forEach(dish => {
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.innerHTML = `<strong>${dish.dishName}</strong> - $${dish.price} <br>Description: ${dish.description} <br>Stock: ${dish.stockQuantity}`;
+            li.innerHTML = `
+                <strong>${dish.dishName}</strong> - $${dish.price}
+                <br>Description: ${dish.description}
+                <br>Stock: ${dish.stockQuantity}
+            `;
             ordersList.appendChild(li);
         });
     }
@@ -133,124 +148,116 @@ document.addEventListener('DOMContentLoaded', async function() {
         dishes.forEach(dish => {
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.innerHTML = `<strong>${dish.dishName}</strong> - $${dish.price} <br>Description: ${dish.description} <br>Stock: ${dish.stockQuantity}`;
+            li.innerHTML = `
+                <strong>${dish.dishName}</strong> - $${dish.price}
+                <br>Description: ${dish.description}
+                <br>Stock: ${dish.stockQuantity}
+            `;
             allDishesList.appendChild(li);
         });
     }
 
+    // Get dish name by ID
     async function getDishNameById(dishId) {
         try {
-            const resp = await fetch(`http://localhost:8080/dishes/api/dishes/${dishId}`);
+            const resp = await fetch(`http://localhost:8087/dishes/api/dishes/${dishId}`);
             if (resp.ok) {
                 const dish = await resp.json();
                 return dish.dishName || dishId;
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error fetching dish name:', e);
+        }
         return dishId;
     }
 
+    // Display current orders
     async function displayCurrentOrders(orders) {
         currentOrdersList.innerHTML = '';
         if (!orders || orders.length === 0) {
             currentOrdersList.innerHTML = '<li class="list-group-item">No current orders found.</li>';
             return;
         }
+
         let hasCurrent = false;
         for (const order of orders) {
             if (order.status && order.status.toLowerCase() !== 'delivered') {
                 hasCurrent = true;
-                let subtotal = 0;
-                if (order.items && Array.isArray(order.items)) {
-                    subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                }
-                // Fetch shipping fee using the provided API
-                let shippingFee = '...';
-                try {
-                    const shippingResp = await fetch(`http://localhost:8082/orders/shipping-order/${order.id}`);
-                    if (shippingResp.ok) {
-                        const shippingOrder = await shippingResp.json();
-                        if (shippingOrder && shippingOrder.shippingFee != null) {
-                            shippingFee = shippingOrder.shippingFee;
-                        }
-                    }
-                } catch (e) {}
                 const li = document.createElement('li');
                 li.className = 'list-group-item';
+
                 let itemsHtml = '';
+                let total = 0;
                 for (const item of order.items) {
                     const dishName = await getDishNameById(item.dishId);
-                    itemsHtml += `<li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}</li>`;
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    itemsHtml += `
+                        <li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}
+                        (Total: $${itemTotal.toFixed(2)})</li>
+                    `;
                 }
-                let totalPriceWithShipping = parseFloat(order.totalPrice) + parseFloat(shippingFee);
+
                 li.innerHTML = `
-                    <strong>Status:</strong> ${order.status} <br>
-                    <strong>Created At:</strong> ${order.createdAt} <br>
-                    <strong>Items:</strong> <ul>${itemsHtml}</ul>
-                    <strong>Subtotal:</strong> $${subtotal.toFixed(2)} <br>
-                    <strong>Shipping Fee:</strong> $${shippingFee} <br>
-                    <strong>Total Price:</strong> $${totalPriceWithShipping.toFixed(2)} <br>`;
+                    <strong>Status:</strong> ${order.status}
+                    <br><strong>Created At:</strong> ${order.createdAt}
+                    <br><strong>Delivery Address:</strong> ${order.deliveryAddress || 'Not specified'}
+                    <br><strong>Items:</strong><ul>${itemsHtml}</ul>
+                    <strong>Total Price:</strong> $${total.toFixed(2)}
+                `;
                 currentOrdersList.appendChild(li);
             }
         }
+
         if (!hasCurrent) {
             currentOrdersList.innerHTML = '<li class="list-group-item">No current orders found.</li>';
         }
     }
 
+    // Display past orders
     async function displayPastOrders(orders) {
         pastOrdersList.innerHTML = '';
         if (!orders || orders.length === 0) {
             pastOrdersList.innerHTML = '<li class="list-group-item">No past orders found.</li>';
             return;
         }
+
         let hasPast = false;
         for (const order of orders) {
             if (order.status && order.status.toLowerCase() === 'delivered') {
                 hasPast = true;
-                let subtotal = 0;
-                if (order.items && Array.isArray(order.items)) {
-                    subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                }
-                // Fetch shipping fee using the provided API
-                let shippingFee = '...';
-                try {
-                    const shippingResp = await fetch(`http://localhost:8082/orders/shipping-order/${order.id}`);
-                    if (shippingResp.ok) {
-                        const shippingOrder = await shippingResp.json();
-                        if (shippingOrder && shippingOrder.shippingFee != null) {
-                            shippingFee = shippingOrder.shippingFee;
-                        }
-                    }
-                } catch (e) {}
                 const li = document.createElement('li');
                 li.className = 'list-group-item';
+
                 let itemsHtml = '';
+                let total = 0;
                 for (const item of order.items) {
                     const dishName = await getDishNameById(item.dishId);
-                    itemsHtml += `<li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}</li>`;
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    itemsHtml += `
+                        <li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}
+                        (Total: $${itemTotal.toFixed(2)})</li>
+                    `;
                 }
-                let totalPriceWithShipping = parseFloat(order.totalPrice) + parseFloat(shippingFee);
+
                 li.innerHTML = `
-                    <strong>Status:</strong> ${order.status} <br>
-                    <strong>Created At:</strong> ${order.createdAt} <br>
-                    <strong>Items:</strong> <ul>${itemsHtml}</ul>
-                    <strong>Subtotal:</strong> $${subtotal.toFixed(2)} <br>
-                    <strong>Shipping Fee:</strong> $${shippingFee} <br>
-                    <strong>Total Price:</strong> $${totalPriceWithShipping.toFixed(2)} <br>`;
+                    <strong>Status:</strong> ${order.status}
+                    <br><strong>Created At:</strong> ${order.createdAt}
+                    <br><strong>Delivery Address:</strong> ${order.deliveryAddress || 'Not specified'}
+                    <br><strong>Items:</strong><ul>${itemsHtml}</ul>
+                    <strong>Total Price:</strong> $${total.toFixed(2)}
+                `;
                 pastOrdersList.appendChild(li);
             }
         }
+
         if (!hasPast) {
             pastOrdersList.innerHTML = '<li class="list-group-item">No past orders found.</li>';
         }
     }
 
-    const orderItemsContainer = document.getElementById('orderItemsContainer');
-    const addOrderItemBtn = document.getElementById('addOrderItemBtn');
-    const makeOrderForm = document.getElementById('makeOrderForm');
-    const shippingLocationInput = document.getElementById('shippingLocation');
-    const shippingCompanySelect = document.getElementById('shippingCompany');
-
+    // Sellers and order items management
     let sellers = [];
     let orderItemIndex = 0;
 
@@ -263,30 +270,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 sellers = [];
             }
         } catch (e) {
+            console.error('Error fetching sellers:', e);
             sellers = [];
         }
     }
 
     async function fetchDishesBySeller(sellerId) {
         try {
-            const resp = await fetch(`http://localhost:8080/dishes/api/dishes/seller/${sellerId}`);
+            const resp = await fetch(`http://localhost:8087/dishes/api/dishes/seller/${sellerId}`);
             if (resp.ok) {
                 return await resp.json();
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error fetching dishes for seller:', e);
+        }
         return [];
     }
 
-    async function fetchShippingCompanies(region) {
-        try {
-            const resp = await fetch(`http://localhost:8082/shipping/companies/region/${encodeURIComponent(region)}`);
-            if (resp.ok) {
-                return await resp.json();
-            }
-        } catch (e) {}
-        return [];
-    }
-
+    // Add new order item row
     async function addOrderItemRow() {
         const idx = orderItemIndex++;
         const row = document.createElement('div');
@@ -296,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             <div class="col-md-3 mb-2">
                 <select class="form-select seller-select" required>
                     <option value="">Select seller</option>
-                    ${sellers.map(s => `<option value="${s.id}">${s.username || s.name || s.fullName || 'Seller ' + s.id}</option>`).join('')}
+                    ${sellers.map(s => `<option value="${s.id}">${s.username || 'Seller ' + s.id}</option>`).join('')}
                 </select>
             </div>
             <div class="col-md-4 mb-2">
@@ -313,33 +314,46 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         orderItemsContainer.appendChild(row);
 
+        // Add event listeners for the new row
         const sellerSelect = row.querySelector('.seller-select');
         const dishSelect = row.querySelector('.dish-select');
         const quantityInput = row.querySelector('.quantity-input');
+        const addressInput = document.getElementById('shippingLocation');
+// …
+
+        const region = addressInput.value.trim();
         sellerSelect.addEventListener('change', async function() {
             dishSelect.innerHTML = '<option value="">Select dish</option>';
             dishSelect.disabled = true;
             quantityInput.value = '';
             quantityInput.disabled = true;
+
             if (this.value) {
                 const dishes = await fetchDishesBySeller(this.value);
                 if (dishes.length > 0) {
-                    dishSelect.innerHTML += dishes.map(d => `<option value="${d.dishId}" data-price="${d.price}">${d.dishName} ($${d.price})</option>`).join('');
+                    dishSelect.innerHTML += dishes.map(d =>
+                        `<option value="${d.dishId}" data-price="${d.price}">
+                            ${d.dishName} ($${d.price})
+                        </option>`
+                    ).join('');
                     dishSelect.disabled = false;
                 } else {
-                    dishSelect.innerHTML = '<option value="">No dishes</option>';
+                    dishSelect.innerHTML = '<option value="">No dishes available</option>';
                 }
             }
         });
+
         dishSelect.addEventListener('change', function() {
             quantityInput.value = '';
             quantityInput.disabled = !this.value;
         });
+
         row.querySelector('.remove-order-item-btn').addEventListener('click', function() {
             row.remove();
         });
     }
 
+    // Initialize order form
     await fetchSellers();
     addOrderItemRow();
 
@@ -347,81 +361,51 @@ document.addEventListener('DOMContentLoaded', async function() {
         addOrderItemBtn.addEventListener('click', addOrderItemRow);
     }
 
-    if (shippingLocationInput) {
-        let lastRegion = '';
-        shippingLocationInput.addEventListener('input', async function() {
-            const region = this.value.trim();
-            if (region && region !== lastRegion) {
-                lastRegion = region;
-                shippingCompanySelect.innerHTML = '<option value="">Loading...</option>';
-                const companies = await fetchShippingCompanies(region);
-                if (companies.length > 0) {
-                    shippingCompanySelect.innerHTML = '<option value="">Select shipping company</option>' +
-                        companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                } else {
-                    shippingCompanySelect.innerHTML = '<option value="">No companies for this region</option>';
-                }
-            } else if (!region) {
-                shippingCompanySelect.innerHTML = '<option value="">Select shipping company</option>';
-            }
-        });
-    }
-
+    // Handle order submission
     if (makeOrderForm) {
         makeOrderForm.addEventListener('submit', async function(event) {
             event.preventDefault();
-            const userId = localStorage.getItem('userId');
+
             if (!userId) {
                 showToast('User not logged in.', 'danger');
                 return;
             }
+
+            // Collect order items
             const orderItems = [];
             const rows = orderItemsContainer.querySelectorAll('.order-item-row');
+
             for (const row of rows) {
                 const sellerId = row.querySelector('.seller-select').value;
                 const dishSelect = row.querySelector('.dish-select');
                 const dishId = dishSelect.value;
                 const quantity = row.querySelector('.quantity-input').value;
                 const price = dishSelect.options[dishSelect.selectedIndex]?.getAttribute('data-price');
+
                 if (!sellerId || !dishId || !quantity || quantity <= 0) {
                     showToast('Please fill all order item fields.', 'danger');
                     return;
                 }
-                orderItems.push({ dishId: parseInt(dishId), quantity: parseInt(quantity), price: parseFloat(price) });
+
+                orderItems.push({
+                    dishId: parseInt(dishId),
+                    quantity: parseInt(quantity),
+                    price: parseFloat(price)
+                });
             }
+
             if (orderItems.length === 0) {
                 showToast('Add at least one dish to your order.', 'danger');
                 return;
             }
-            const region = shippingLocationInput.value.trim();
-            const shippingCompanyId = shippingCompanySelect.value;
-            if (!region || !shippingCompanyId) {
-                showToast('Please enter shipping location and select a shipping company.', 'danger');
+
+            const address = addressInput.value.trim();
+            if (!address) {
+                showToast('Please enter delivery address.', 'danger');
                 return;
             }
-            let shippingFee = 0;
-            try {
-                const regionsResp = await fetch(`http://localhost:8082/shipping/company/${shippingCompanyId}/regions`);
-                if (regionsResp.ok) {
-                    const regions = await regionsResp.json();
-                    const regionObj = regions.find(r => {
-                        if (!r.name) return false;
-                        return r.name.trim().toLowerCase() === region.trim().toLowerCase();
-                    });
-                    if (regionObj && regionObj.fee != null) {
-                        shippingFee = parseFloat(regionObj.fee);
-                    } else {
-                        showToast('Selected shipping company does not deliver to this region or fee not found.', 'danger');
-                        return;
-                    }
-                } else {
-                    showToast('Failed to fetch shipping company regions.', 'danger');
-                    return;
-                }
-            } catch (e) {
-                showToast('Error fetching shipping fee.', 'danger');
-                return;
-            }
+
+            // Create order
             try {
                 const resp = await fetch('http://localhost:8082/orders/create', {
                     method: 'POST',
@@ -429,147 +413,115 @@ document.addEventListener('DOMContentLoaded', async function() {
                     body: JSON.stringify({
                         customerId: parseInt(userId),
                         items: orderItems,
-                        shippingFee: shippingFee
+                        address: region
                     })
                 });
-                const text = await resp.text();
+
                 if (resp.ok) {
-                    let result;
-                    try { result = JSON.parse(text); } catch (e) { result = text; }
-                    showToast('Order placed successfully!', 'success');
-                    let orderId = null;
-                    if (typeof result === 'object' && result.id) {
-                        orderId = result.id;
-                    } else if (typeof result === 'string') {
-                        const match = result.match(/order\s*id\s*[:=]\s*(\d+)/i);
-                        if (match) orderId = parseInt(match[1]);
-                    }
-                    if (!orderId) {
-                        try {
-                            const ordersResp = await fetch(`http://localhost:8082/orders/customer/${userId}`);
-                            if (ordersResp.ok) {
-                                const orders = await ordersResp.json();
-                                if (Array.isArray(orders) && orders.length > 0) {
-                                    orderId = orders[orders.length - 1].id;
-                                }
-                            }
-                        } catch (e) {}
-                    }
-                    if (orderId) {
-                        const shippingOrderPayload = {
-                            order: { id: orderId },
-                            company: { id: parseInt(shippingCompanyId) },
-                            region: region,
-                            status: "PENDING",
-                            shippingFee: shippingFee
-                        };
-                        try {
-                            const shippingResp = await fetch('http://localhost:8082/shipping/order', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(shippingOrderPayload)
-                            });
-                            if (shippingResp.ok) {
-                                showToast('Shipping order created!', 'success');
-                                let orderDetails = { items: orderItems, shippingFee, totalPrice: (orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0) + shippingFee) };
-                                let userBalance = 0;
-                                try {
-                                    const balResp = await fetch(`http://localhost:8081/api/users/balance/${userId}`);
-                                    if (balResp.ok) userBalance = await balResp.json();
-                                } catch (e) {}
-                                let modal = document.getElementById('paymentModal');
-                                if (modal) modal.remove();
-                                modal = document.createElement('div');
-                                modal.id = 'paymentModal';
-                                modal.style.position = 'fixed';
-                                modal.style.top = '0';
-                                modal.style.left = '0';
-                                modal.style.width = '100vw';
-                                modal.style.height = '100vh';
-                                modal.style.background = 'rgba(0,0,0,0.5)';
-                                modal.style.display = 'flex';
-                                modal.style.alignItems = 'center';
-                                modal.style.justifyContent = 'center';
-                                modal.style.zIndex = 10000;
-                                modal.innerHTML = `
-                                    <div style="background:#fff;padding:32px 24px;border-radius:12px;min-width:340px;max-width:95vw;box-shadow:0 2px 16px rgba(0,0,0,0.18);">
-                                        <h4 class="mb-3">Payment Confirmation</h4>
-                                        <div><strong>Order Items:</strong><ul>${orderItems.map(i => `<li>Dish ID: ${i.dishId}, Quantity: ${i.quantity}, Price: $${i.price}</li>`).join('')}</ul></div>
-                                        <div><strong>Shipping Fee:</strong> $${shippingFee.toFixed(2)}</div>
-                                        <div><strong>Total Price:</strong> $${orderDetails.totalPrice.toFixed(2)}</div>
-                                        <div><strong>Your Balance:</strong> $${userBalance.toFixed(2)}</div>
-                                        <div class="mt-4 d-flex justify-content-between">
-                                            <button id="confirmPaymentBtn" class="btn btn-success">Confirm Payment</button>
-                                            <button id="cancelOrderBtn" class="btn btn-danger">Cancel Order</button>
-                                        </div>
-                                    </div>
-                                `;
-                                document.body.appendChild(modal);
-                                document.getElementById('confirmPaymentBtn').onclick = async function() {
-                                    if (userBalance >= orderDetails.totalPrice) {
-                                        try {
-                                            const deductResp = await fetch(`http://localhost:8081/api/users/balance/${userId}/deduct`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ amount: orderDetails.totalPrice })
-                                            });
-                                            if (deductResp.ok) {
-                                                for (const item of orderItems) {
-                                                    try {
-                                                        await fetch('http://localhost:8080/dishes/api/dishes/deduct-stock', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ dishId: item.dishId, quantity: item.quantity })
-                                                        });
-                                                        await fetch('http://localhost:8080/dishes/api/sold-dishes', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ dishId: item.dishId, customerId: parseInt(userId) })
-                                                        });
-                                                    } catch (e) {
-                                                        showToast('Error updating dish stock or sold dishes for dish ' + item.dishId, 'danger');
-                                                    }
-                                                }
-                                                showToast('Payment successful!', 'success');
-                                                modal.remove();
-                                            } else {
-                                                showToast('Failed to deduct balance.', 'danger');
-                                            }
-                                        } catch (e) {
-                                            showToast('Error during payment.', 'danger');
-                                        }
-                                    } else {
-                                        showToast('Insufficient balance. Order will be cancelled.', 'danger');
-                                        await fetch(`http://localhost:8082/orders/cancel/${orderId}`, { method: 'POST' });
-                                        await fetch(`http://localhost:8082/shipping/order/cancel-by-order-id/${orderId}`, { method: 'POST' });
-                                        modal.remove();
-                                    }
-                                };
-                                document.getElementById('cancelOrderBtn').onclick = async function() {
-                                    await fetch(`http://localhost:8082/orders/cancel/${orderId}`, { method: 'POST' });
-                                    await fetch(`http://localhost:8082/shipping/order/cancel-by-order-id/${orderId}`, { method: 'POST' });
-                                    showToast('Order cancelled.', 'danger');
-                                    modal.remove();
-                                };
-                            } else {
-                                showToast('Failed to create shipping order.', 'danger');
-                            }
-                        } catch (e) {
-                            showToast('Error creating shipping order.', 'danger');
-                        }
-                    } else {
-                        showToast('Order placed but could not determine order ID for shipping.', 'danger');
-                    }
+                    const order = await resp.json();
+                    showPaymentModal(order, orderItems);
                 } else {
-                    showToast('Failed to place order. Server says: ' + text, 'danger');
+                    const error = await resp.text();
+                    showToast(`Failed to create order: ${error}`, 'danger');
                 }
             } catch (e) {
-                showToast('Error submitting order. Please try again.', 'danger');
+                showToast('Error creating order. Please try again.', 'danger');
+                console.error('Order creation error:', e);
             }
         });
     }
 
+    // Payment modal
+    function showPaymentModal(order, orderItems) {
+        let modal = document.getElementById('paymentModal');
+        if (modal) modal.remove();
 
+        const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        modal = document.createElement('div');
+        modal.id = 'paymentModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = 10000;
+
+        modal.innerHTML = `
+            <div style="background:#fff;padding:32px 24px;border-radius:12px;min-width:340px;max-width:95vw;box-shadow:0 2px 16px rgba(0,0,0,0.18);">
+                <h4 class="mb-3">Payment Confirmation</h4>
+                <div><strong>Order Items:</strong>
+                    <ul>${orderItems.map(i => 
+                        `<li>Dish ID: ${i.dishId}, Quantity: ${i.quantity}, Price: $${i.price}</li>`
+                    ).join('')}</ul>
+                </div>
+                <div><strong>Delivery Address:</strong> ${order.address}</div>
+                <div><strong>Total Price:</strong> $${total.toFixed(2)}</div>
+                <div class="mt-4 d-flex justify-content-between">
+                    <button id="confirmPaymentBtn" class="btn btn-success">Confirm Payment</button>
+                    <button id="cancelOrderBtn" class="btn btn-danger">Cancel Order</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Handle payment confirmation
+        document.getElementById('confirmPaymentBtn').onclick = async function() {
+            try {
+                // Fetch user balance
+                const balanceResp = await fetch(`http://localhost:8081/api/users/balance/${userId}`);
+                if (!balanceResp.ok) {
+                    showToast('Failed to fetch balance.', 'danger');
+                    return;
+                }
+                const balance = await balanceResp.json();
+
+                if (balance >= total) {
+                    // Deduct balance
+                    const deductResp = await fetch(`http://localhost:8081/api/users/balance/${userId}/deduct`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: total })
+                    });
+
+                    if (deductResp.ok) {
+                        showToast('Payment successful! Your order is confirmed.', 'success');
+                        modal.remove();
+                        // Optionally refresh order lists or redirect user
+                    } else {
+                        const error = await deductResp.text();
+                        showToast(`Failed to deduct balance: ${error}`, 'danger');
+                    }
+                } else {
+                    showToast('Insufficient balance for payment.', 'warning');
+                }
+            } catch (e) {
+                showToast('Error during payment processing.', 'danger');
+                console.error('Payment confirmation error:', e);
+            }
+        };
+
+        // Handle order cancellation
+        document.getElementById('cancelOrderBtn').onclick = async function() {
+            try {
+                await fetch(`http://localhost:8082/orders/cancel/${order.id}`, {
+                    method: 'POST'
+                });
+                showToast('Order cancelled.', 'info');
+                modal.remove();
+            } catch (e) {
+                showToast('Error cancelling order.', 'danger');
+                console.error('Cancel error:', e);
+            }
+        };
+    }
+
+    // Toast notifications
     let toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
@@ -589,7 +541,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         toast.className = `toast align-items-center text-bg-${type} border-0 show`;
         toast.style.minWidth = '260px';
         toast.style.marginBottom = '12px';
-        toast.style.background = type === 'info' ? '#0dcaf0' : (type === 'success' ? '#198754' : (type === 'danger' ? '#dc3545' : '#6c757d'));
+        toast.style.background = type === 'info' ? '#0dcaf0' :
+                               (type === 'success' ? '#198754' :
+                               (type === 'danger' ? '#dc3545' : '#6c757d'));
         toast.style.color = '#fff';
         toast.style.padding = '16px 24px';
         toast.style.borderRadius = '8px';
@@ -603,6 +557,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 4000);
     }
 
+    // Notifications polling
     async function pollNotifications() {
         if (!userId) return;
         try {
@@ -619,11 +574,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         } catch (e) {
-            //handle error
+            console.error('Notification error:', e);
         }
     }
-    setInterval(() => {
-        pollNotifications();
-    }, 3000);
+
+    setInterval(pollNotifications, 3000);
     pollNotifications();
 });

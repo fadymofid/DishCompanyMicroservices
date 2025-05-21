@@ -1,6 +1,7 @@
 package service2.Controller;
 
 import java.util.List;
+import java.util.Map;
 
 import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
@@ -81,5 +82,9 @@ public class DishController {
         dishService.deleteDish(id);
     }
 
-
+@POST
+@Path("/sold-dishes")
+public void addSoldDish(Map<String, Integer> data) throws Exception {
+    dishService.addSoldDish(data.get("dishId"), data.get("customerId"));
+}
 }

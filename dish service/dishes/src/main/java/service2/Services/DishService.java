@@ -30,6 +30,19 @@ public class DishService {
     public void deleteDish(int dishId) throws SQLException {
         dishDAL.deleteDish(dishId);
     }
+    public boolean isStockAvailable(int dishId, int quantity) {
+        Dish dish = null;
+        try {
+            dish = this.getDishById(dishId);  // call method in the same class
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        if (dish == null) {
+            return false;
+        }
+        return dish.getStockQuantity() >= quantity;
+    }
 
     public List<Dish> getAllDishesBySeller(int sellerId) throws SQLException {
         return dishDAL.getAllDishesBySeller(sellerId);
@@ -49,4 +62,8 @@ public class DishService {
      public List<Dish> getDishesByCustomerId(int customerId) throws SQLException {
         return dishDAL.getDishesByCustomerId(customerId);
     }
+
+    public void addSoldDish(int dishId, int customerId) throws SQLException {
+    dishDAL.addSoldDish(dishId, customerId);
+}
 }

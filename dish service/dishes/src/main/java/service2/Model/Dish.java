@@ -7,9 +7,20 @@ public class Dish {
     private String description;
     private double price;
     private int stockQuantity;
-    private int customerId;
+   
 
-
+   public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
+      public Dish(int dishId, int sellerId, String dishName, String description, double price, int stockQuantity) {
+         this.dishId = dishId;
+         this.sellerId = sellerId;
+         this.dishName = dishName;
+         this.description = description;
+         this.price = price;
+         this.stockQuantity = stockQuantity;
+      }
+      public Dish() {
+         // Default constructor
+}
     // Getters and Setters
     public int getDishId() { return dishId; }
     public void setDishId(int dishId) { this.dishId = dishId; }
@@ -27,12 +38,6 @@ public class Dish {
     public void setPrice(double price) { this.price = price; }
 
     public int getStockQuantity() { return stockQuantity; }
-    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
 
-    public int getCustomerId(){
-       return customerId;
-    }
-      public void setCustomerId(int c){
-       this.customerId=c;
-    }
+ 
 }

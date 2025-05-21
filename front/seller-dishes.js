@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/dishes/api/dishes/seller/${userId}`);
+        const response = await fetch(`http://localhost:8087/dishes/api/dishes/seller/${userId}`);
         if (response.ok) {
             const dishes = await response.json();
             if (dishes.length === 0) {
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const dishId = this.getAttribute('data-id');
                         if (confirm('Are you sure you want to delete this dish?')) {
                             try {
-                                const resp = await fetch(`http://localhost:8080/dishes/api/dishes/${dishId}`, {
+                                const resp = await fetch(`http://localhost:8087/dishes/api/dishes/${dishId}`, {
                                     method: 'DELETE'
                                 });
                                 if (resp.ok) {
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 stockQuantity: parseInt(formData.get('stockQuantity'))
                             };
                             try {
-                                const resp = await fetch('http://localhost:8080/dishes/api/dishes', {
+                                const resp = await fetch('http://localhost:8087/dishes/api/dishes', {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(updatedDish)

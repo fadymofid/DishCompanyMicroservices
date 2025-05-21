@@ -1,0 +1,29 @@
+package com.homemade.ordersAndShipmentService;
+
+import org.springframework.amqp.core.Queue;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitMQConfig {
+    @Bean
+    public Queue stockCheckQueue() {
+        return new Queue("stock_check_queue", false);
+    }
+    @Bean
+    public Queue stockCheckResponseQueue() {
+        return new Queue("stock_check_response_queue", false);
+    }
+    @Bean
+    public Queue paymentRequestQueue() {
+        return new Queue("payment_request_queue", false);
+    }
+    @Bean
+    public Queue paymentResponseQueue() {
+        return new Queue("payment_response_queue", false);
+    }
+    @Bean
+    public Queue customerNotificationQueue() {
+        return new Queue("customer_notification_queue", false);
+    }
+}

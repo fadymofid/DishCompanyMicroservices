@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (viewDishesBtn) {
         viewDishesBtn.addEventListener('click', async function() {
             try {
-                const response = await fetch(`http://localhost:8080/api/dishes?sellerId=${userId}`);
+                const response = await fetch(`http://localhost:8087/api/dishes?sellerId=${userId}`);
                 if (response.ok) {
                     const dishes = await response.json();
                     displayDishes(dishes);
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost:8080/dishes/api/sold-dishes/seller/${userId}`, {
+                const response = await fetch(`http://localhost:8087/dishes/api/sold-dishes/seller/${userId}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 stockQuantity
             };
             try {
-                const response = await fetch('http://localhost:8080/dishes/api/dishes', {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newDish)
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '<div>Loading...</div>';
         try {
             // 1. Get all dishes for this seller
-            const dishesResp = await fetch(`http://localhost:8080/dishes/api/dishes/seller/${sellerId}`);
+            const dishesResp = await fetch(`http://localhost:8087/dishes/api/dishes/seller/${sellerId}`);
             if (!dishesResp.ok) throw new Error('Failed to fetch dishes');
             const dishes = await dishesResp.json();
             if (!Array.isArray(dishes) || dishes.length === 0) {
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function showBuyingCustomersModal(dishId, dishName) {
         // 2.1 Get all customer ids who bought this dish
-        const resp = await fetch(`http://localhost:8080/dishes/api/sold-dishes/dish/${dishId}/customers`);
+        const resp = await fetch(`http://localhost:8087/dishes/api/sold-dishes/dish/${dishId}/customers`);
         if (!resp.ok) {
             alert('Failed to fetch buying customers.');
             return;

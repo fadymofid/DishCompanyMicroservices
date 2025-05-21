@@ -3,6 +3,15 @@
    public class DishStockRequest {
         private int dishId;
         private int quantity;
+       private int orderId;
+
+       public int getOrderId() {
+           return orderId;
+       }
+
+       public void setOrderId(int orderId) {
+           this.orderId = orderId;
+       }
         public int getDishId()     { return dishId; }
         public void setDishId(int dishId)     { this.dishId = dishId; }
         public int getQuantity()   { return quantity; }

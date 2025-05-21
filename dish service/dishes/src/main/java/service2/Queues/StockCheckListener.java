@@ -1,0 +1,64 @@
+package service2.Messaging;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.*;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.Singleton;
+import jakarta.inject.Inject;
+import service2.Services.DishService;
+import service2.DTO.DishStockRequest;
+import service2.DTO.StockCheckResponse;
+
+import java.nio.charset.StandardCharsets;
+
+@Singleton
+public class StockCheckListener {
+
+    private static final String STOCK_CHECK_QUEUE = "stock_check_queue";
+    private static final String STOCK_CHECK_RESPONSE_QUEUE = "stock_check_response_queue";
+
+    @Inject
+    private DishService dishService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @PostConstruct
+    public void init() throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+
+        channel.queueDeclare(STOCK_CHECK_QUEUE, false, false, false, null);
+        System.out.println("[✓] Listening on '" + STOCK_CHECK_QUEUE + "' for stock check requests...");
+
+        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+            String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+            System.out.println("[✓] Received stock check request: " + message);
+
+            try {
+                DishStockRequest request = objectMapper.readValue(message, DishStockRequest.class);
+                int dishId = request.getDishId();
+                int quantity = request.getQuantity();
+
+                boolean available = dishService.isStockAvailable(dishId, quantity);
+
+                StockCheckResponse response = new StockCheckResponse();
+                response.setOrderId(request.getOrderId());
+                response.setDishId(dishId);
+                response.setAvailable(available);
+
+                String responseMsg = objectMapper.writeValueAsString(response);
+
+                channel.basicPublish("", STOCK_CHECK_RESPONSE_QUEUE, null, responseMsg.getBytes(StandardCharsets.UTF_8));
+                System.out.println("[✓] Sent stock check response: " + responseMsg);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        };
+
+        channel.basicConsume(STOCK_CHECK_QUEUE, true, deliverCallback, consumerTag -> {});
+    }
+}
