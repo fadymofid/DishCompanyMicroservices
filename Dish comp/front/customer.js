@@ -1,0 +1,585 @@
+document.addEventListener('DOMContentLoaded', async function() {
+    // User authentication check
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+    const welcome = document.getElementById('customerWelcome');
+    if (welcome && username) {
+        welcome.textContent = `Welcome, ${username}!`;
+    }
+
+    // Fetch and display user info
+    if (userId) {
+        try {
+            const resp = await fetch(`http://localhost:8081/api/users/id/${userId}`);
+            if (resp.ok) {
+                const user = await resp.json();
+                if (welcome) {
+                    welcome.textContent = `Welcome, ${user.username}!`;
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching user info:', e);
+        }
+    }
+
+    // Initialize DOM elements
+    const ordersList = document.getElementById('ordersList');
+    const fetchOrdersBtn = document.getElementById('fetchOrders');
+    const allDishesList = document.getElementById('allDishesList');
+    const fetchAllDishesBtn = document.getElementById('fetchAllDishes');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const fetchCurrentOrdersBtn = document.getElementById('fetchCurrentOrders');
+    const currentOrdersList = document.getElementById('currentOrdersList');
+    const fetchPastOrdersBtn = document.getElementById('fetchPastOrders');
+    const pastOrdersList = document.getElementById('pastOrdersList');
+    const orderItemsContainer = document.getElementById('orderItemsContainer');
+    const addOrderItemBtn = document.getElementById('addOrderItemBtn');
+    const makeOrderForm = document.getElementById('makeOrderForm');
+    const addressInput = document.getElementById('shippingLocation');
+
+
+    // Fetch available dishes
+    if (fetchOrdersBtn) {
+        fetchOrdersBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    const dishes = await response.json();
+                    displayDishes(dishes);
+                } else {
+                    ordersList.innerHTML = '<li class="list-group-item text-danger">Failed to fetch dishes.</li>';
+                }
+            } catch (error) {
+                ordersList.innerHTML = '<li class="list-group-item text-danger">Error fetching dishes.</li>';
+            }
+        });
+    }
+
+    // Fetch all dishes
+    if (fetchAllDishesBtn) {
+        fetchAllDishesBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes/all', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    const dishes = await response.json();
+                    displayAllDishes(dishes);
+                } else {
+                    allDishesList.innerHTML = '<li class="list-group-item text-danger">Failed to fetch dishes.</li>';
+                }
+            } catch (error) {
+                allDishesList.innerHTML = '<li class="list-group-item text-danger">Error fetching dishes.</li>';
+            }
+        });
+    }
+
+    // Fetch current orders
+    if (fetchCurrentOrdersBtn && userId) {
+        fetchCurrentOrdersBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch(`http://localhost:8082/orders/customer/${userId}`);
+                if (response.ok) {
+                    const orders = await response.json();
+                    displayCurrentOrders(orders);
+                } else {
+                    currentOrdersList.innerHTML = '<li class="list-group-item text-danger">Failed to fetch current orders.</li>';
+                }
+            } catch (error) {
+                currentOrdersList.innerHTML = '<li class="list-group-item text-danger">Error fetching current orders.</li>';
+            }
+        });
+    }
+
+    // Fetch past orders
+    if (fetchPastOrdersBtn && userId) {
+        fetchPastOrdersBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch(`http://localhost:8082/orders/customer/${userId}`);
+                if (response.ok) {
+                    const orders = await response.json();
+                    displayPastOrders(orders);
+                } else {
+                    pastOrdersList.innerHTML = '<li class="list-group-item text-danger">Failed to fetch past orders.</li>';
+                }
+            } catch (error) {
+                pastOrdersList.innerHTML = '<li class="list-group-item text-danger">Error fetching past orders.</li>';
+            }
+        });
+    }
+
+    // Logout functionality
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Display functions
+    function displayDishes(dishes) {
+        ordersList.innerHTML = '';
+        if (!dishes || dishes.length === 0) {
+            ordersList.innerHTML = '<li class="list-group-item">No dishes found.</li>';
+            return;
+        }
+        dishes.forEach(dish => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.innerHTML = `
+                <strong>${dish.dishName}</strong> - $${dish.price}
+                <br>Description: ${dish.description}
+                <br>Stock: ${dish.stockQuantity}
+            `;
+            ordersList.appendChild(li);
+        });
+    }
+
+    function displayAllDishes(dishes) {
+        allDishesList.innerHTML = '';
+        if (!dishes || dishes.length === 0) {
+            allDishesList.innerHTML = '<li class="list-group-item">No dishes found.</li>';
+            return;
+        }
+        dishes.forEach(dish => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.innerHTML = `
+                <strong>${dish.dishName}</strong> - $${dish.price}
+                <br>Description: ${dish.description}
+                <br>Stock: ${dish.stockQuantity}
+            `;
+            allDishesList.appendChild(li);
+        });
+    }
+
+    // Get dish name by ID
+    async function getDishNameById(dishId) {
+        try {
+            const resp = await fetch(`http://localhost:8087/dishes/api/dishes/${dishId}`);
+            if (resp.ok) {
+                const dish = await resp.json();
+                return dish.dishName || dishId;
+            }
+        } catch (e) {
+            console.error('Error fetching dish name:', e);
+        }
+        return dishId;
+    }
+
+    // Display current orders
+    async function displayCurrentOrders(orders) {
+        currentOrdersList.innerHTML = '';
+        if (!orders || orders.length === 0) {
+            currentOrdersList.innerHTML = '<li class="list-group-item">No current orders found.</li>';
+            return;
+        }
+
+        let hasCurrent = false;
+        for (const order of orders) {
+            if (order.status && order.status.toLowerCase() !== 'delivered') {
+                hasCurrent = true;
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+
+                let itemsHtml = '';
+                let total = 0;
+                for (const item of order.items) {
+                    const dishName = await getDishNameById(item.dishId);
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    itemsHtml += `
+                        <li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}
+                        (Total: $${itemTotal.toFixed(2)})</li>
+                    `;
+                }
+
+                li.innerHTML = `
+                    <strong>Status:</strong> ${order.status}
+                    <br><strong>Created At:</strong> ${order.createdAt}
+                    <br><strong>Delivery Address:</strong> ${order.deliveryAddress || 'Not specified'}
+                    <br><strong>Items:</strong><ul>${itemsHtml}</ul>
+                    <strong>Total Price:</strong> $${total.toFixed(2)}
+                `;
+                currentOrdersList.appendChild(li);
+            }
+        }
+
+        if (!hasCurrent) {
+            currentOrdersList.innerHTML = '<li class="list-group-item">No current orders found.</li>';
+        }
+    }
+
+    // Display past orders
+    async function displayPastOrders(orders) {
+        pastOrdersList.innerHTML = '';
+        if (!orders || orders.length === 0) {
+            pastOrdersList.innerHTML = '<li class="list-group-item">No past orders found.</li>';
+            return;
+        }
+
+        let hasPast = false;
+        for (const order of orders) {
+            if (order.status && order.status.toLowerCase() === 'delivered') {
+                hasPast = true;
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+
+                let itemsHtml = '';
+                let total = 0;
+                for (const item of order.items) {
+                    const dishName = await getDishNameById(item.dishId);
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    itemsHtml += `
+                        <li>Dish: ${dishName}, Quantity: ${item.quantity}, Price: $${item.price}
+                        (Total: $${itemTotal.toFixed(2)})</li>
+                    `;
+                }
+
+                li.innerHTML = `
+                    <strong>Status:</strong> ${order.status}
+                    <br><strong>Created At:</strong> ${order.createdAt}
+                    <br><strong>Delivery Address:</strong> ${order.deliveryAddress || 'Not specified'}
+                    <br><strong>Items:</strong><ul>${itemsHtml}</ul>
+                    <strong>Total Price:</strong> $${total.toFixed(2)}
+                `;
+                pastOrdersList.appendChild(li);
+            }
+        }
+
+        if (!hasPast) {
+            pastOrdersList.innerHTML = '<li class="list-group-item">No past orders found.</li>';
+        }
+    }
+
+    // Sellers and order items management
+    let sellers = [];
+    let orderItemIndex = 0;
+
+    async function fetchSellers() {
+        try {
+            const resp = await fetch('http://localhost:8081/api/users/sellers');
+            if (resp.ok) {
+                sellers = await resp.json();
+            } else {
+                sellers = [];
+            }
+        } catch (e) {
+            console.error('Error fetching sellers:', e);
+            sellers = [];
+        }
+    }
+
+    async function fetchDishesBySeller(sellerId) {
+        try {
+            const resp = await fetch(`http://localhost:8087/dishes/api/dishes/seller/${sellerId}`);
+            if (resp.ok) {
+                return await resp.json();
+            }
+        } catch (e) {
+            console.error('Error fetching dishes for seller:', e);
+        }
+        return [];
+    }
+
+    // Add new order item row
+    async function addOrderItemRow() {
+        const idx = orderItemIndex++;
+        const row = document.createElement('div');
+        row.className = 'order-item-row row mb-3';
+        row.dataset.idx = idx;
+        row.innerHTML = `
+            <div class="col-md-3 mb-2">
+                <select class="form-select seller-select" required>
+                    <option value="">Select seller</option>
+                    ${sellers.map(s => `<option value="${s.id}">${s.username || 'Seller ' + s.id}</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-md-4 mb-2">
+                <select class="form-select dish-select" required disabled>
+                    <option value="">Select dish</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <input type="number" class="form-control quantity-input" min="1" placeholder="Quantity" required disabled />
+            </div>
+            <div class="col-md-2 mb-2 d-flex align-items-center">
+                <button type="button" class="btn btn-danger remove-order-item-btn">Remove</button>
+            </div>
+        `;
+        orderItemsContainer.appendChild(row);
+
+        // Add event listeners for the new row
+        const sellerSelect = row.querySelector('.seller-select');
+        const dishSelect = row.querySelector('.dish-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const addressInput = document.getElementById('shippingLocation');
+
+
+
+
+        sellerSelect.addEventListener('change', async function() {
+            dishSelect.innerHTML = '<option value="">Select dish</option>';
+            dishSelect.disabled = true;
+            quantityInput.value = '';
+            quantityInput.disabled = true;
+
+            if (this.value) {
+                const dishes = await fetchDishesBySeller(this.value);
+                if (dishes.length > 0) {
+                    dishSelect.innerHTML += dishes.map(d =>
+                        `<option value="${d.dishId}" data-price="${d.price}">
+                            ${d.dishName} ($${d.price})
+                        </option>`
+                    ).join('');
+                    dishSelect.disabled = false;
+                } else {
+                    dishSelect.innerHTML = '<option value="">No dishes available</option>';
+                }
+            }
+        });
+
+        dishSelect.addEventListener('change', function() {
+            quantityInput.value = '';
+            quantityInput.disabled = !this.value;
+        });
+
+        row.querySelector('.remove-order-item-btn').addEventListener('click', function() {
+            row.remove();
+        });
+    }
+
+    // Initialize order form
+    await fetchSellers();
+    addOrderItemRow();
+
+    if (addOrderItemBtn) {
+        addOrderItemBtn.addEventListener('click', addOrderItemRow);
+    }
+
+    // Handle order submission
+    if (makeOrderForm) {
+        makeOrderForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            if (!userId) {
+                showToast('User not logged in.', 'danger');
+                return;
+            }
+
+            // Collect order items
+            const orderItems = [];
+            const rows = orderItemsContainer.querySelectorAll('.order-item-row');
+
+            for (const row of rows) {
+                const sellerId = row.querySelector('.seller-select').value;
+                const dishSelect = row.querySelector('.dish-select');
+                const dishId = dishSelect.value;
+                const quantity = row.querySelector('.quantity-input').value;
+                const price = dishSelect.options[dishSelect.selectedIndex]?.getAttribute('data-price');
+                if (!sellerId || !dishId || !quantity || quantity <= 0) {
+                    showToast('Please fill all order item fields.', 'danger');
+                    return;
+                }
+
+                orderItems.push({
+                    dishId: parseInt(dishId),
+                    quantity: parseInt(quantity),
+                    price: parseFloat(price)
+                });
+            }
+
+            if (orderItems.length === 0) {
+                showToast('Add at least one dish to your order.', 'danger');
+                return;
+            }
+
+            const addressInput = document.getElementById('shippingLocation');
+            const address = addressInput.value.trim();
+            if (!address) {
+                showToast('Please enter delivery address.', 'danger');
+                return;
+            }
+            // Create order
+            try {
+                const resp = await fetch('http://localhost:8082/orders/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerId: parseInt(userId),
+                        items: orderItems,
+                        address: address
+                    })
+                });
+
+                if (resp.ok) {
+                    const order = await resp.json();
+                    showPaymentModal(order, orderItems, address);
+
+                } else {
+                    const error = await resp.text();
+                    showToast(`Failed to create order: ${error}`, 'danger');
+                }
+            } catch (e) {
+                showToast('Error creating order. Please try again.', 'danger');
+                console.error('Order creation error:', e);
+            }
+        });
+    }
+
+    // Payment modal
+    function showPaymentModal(order, orderItems, address) {
+        let modal = document.getElementById('paymentModal');
+        if (modal) modal.remove();
+
+        const total = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        modal = document.createElement('div');
+        modal.id = 'paymentModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = 10000;
+
+        modal.innerHTML = `
+            <div style="background:#fff;padding:32px 24px;border-radius:12px;min-width:340px;max-width:95vw;box-shadow:0 2px 16px rgba(0,0,0,0.18);">
+                <h4 class="mb-3">Payment Confirmation</h4>
+                <div><strong>Order Items:</strong>
+                    <ul>${orderItems.map(i => 
+                        `<li>Dish ID: ${i.dishId}, Quantity: ${i.quantity}, Price: $${i.price}</li>`
+                    ).join('')}</ul>
+                </div>
+                <div><strong>Delivery Address:</strong> ${address}</div>
+                <div><strong>Total Price:</strong> $${total.toFixed(2)}</div>
+                <div class="mt-4 d-flex justify-content-between">
+                    <button id="confirmPaymentBtn" class="btn btn-success">Confirm Payment</button>
+                    <button id="cancelOrderBtn" class="btn btn-danger">Cancel Order</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Handle payment confirmation
+        document.getElementById('confirmPaymentBtn').onclick = async function() {
+            try {
+                // Fetch user balance
+                const balanceResp = await fetch(`http://localhost:8081/api/users/balance/${userId}`);
+                if (!balanceResp.ok) {
+                    showToast('Failed to fetch balance.', 'danger');
+                    return;
+                }
+                const balance = await balanceResp.json();
+
+                if (balance >= total) {
+                    // Deduct balance
+                    const deductResp = await fetch(`http://localhost:8081/api/users/balance/${userId}/deduct`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: total })
+                    });
+
+                    if (deductResp.ok) {
+                        showToast('Payment successful! Your order is confirmed.', 'success');
+                        modal.remove();
+                        // Optionally refresh order lists or redirect user
+                    } else {
+                        const error = await deductResp.text();
+                        showToast(`Failed to deduct balance: ${error}`, 'danger');
+                    }
+                } else {
+                    showToast('Insufficient balance for payment.', 'warning');
+                }
+            } catch (e) {
+                showToast('Error during payment processing.', 'danger');
+                console.error('Payment confirmation error:', e);
+            }
+        };
+
+        // Handle order cancellation
+        document.getElementById('cancelOrderBtn').onclick = async function() {
+            try {
+                await fetch(`http://localhost:8082/orders/cancel/${order.id}`, {
+                    method: 'POST'
+                });
+                showToast('Order cancelled.', 'info');
+                modal.remove();
+            } catch (e) {
+                showToast('Error cancelling order.', 'danger');
+                console.error('Cancel error:', e);
+            }
+        };
+    }
+
+    // Toast notifications
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.style.position = 'fixed';
+        toastContainer.style.top = '24px';
+        toastContainer.style.right = '24px';
+        toastContainer.style.zIndex = 9999;
+        toastContainer.style.display = 'flex';
+        toastContainer.style.flexDirection = 'column';
+        toastContainer.style.alignItems = 'flex-end';
+        document.body.appendChild(toastContainer);
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+        toast.style.minWidth = '260px';
+        toast.style.marginBottom = '12px';
+        toast.style.background = type === 'info' ? '#0dcaf0' :
+                               (type === 'success' ? '#198754' :
+                               (type === 'danger' ? '#dc3545' : '#6c757d'));
+        toast.style.color = '#fff';
+        toast.style.padding = '16px 24px';
+        toast.style.borderRadius = '8px';
+        toast.style.boxShadow = '0 2px 12px rgba(0,0,0,0.12)';
+        toast.innerHTML = `<span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.classList.add('hide');
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
+    }
+
+    // Notifications polling
+    async function pollNotifications() {
+        if (!userId) return;
+        try {
+            const resp = await fetch(`http://localhost:8082/orders/notifications/${userId}`);
+            if (resp.ok) {
+                const notifications = await resp.json();
+                if (Array.isArray(notifications)) {
+                    notifications.forEach(n => {
+                        let type = 'info';
+                        if (n.status && n.status.toLowerCase() === 'confirmed') type = 'success';
+                        if (n.status && n.status.toLowerCase() === 'rejected') type = 'danger';
+                        showToast(n.message || 'Notification', type);
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Notification error:', e);
+        }
+    }
+
+    setInterval(pollNotifications, 3000);
+    pollNotifications();
+});

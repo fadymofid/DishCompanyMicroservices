@@ -1,0 +1,268 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const userId = localStorage.getItem('userId');
+    const viewDishesBtn = document.getElementById('viewDishesBtn');
+    const dishesContainer = document.getElementById('dishesContainer');
+    const soldDishesList = document.getElementById('soldDishesList');
+    const fetchSoldDishesBtn = document.getElementById('fetchSoldDishes');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+    }
+
+    if (!userId) {
+        alert('User not logged in.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    if (viewDishesBtn) {
+        viewDishesBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch(`http://localhost:8087/api/dishes?sellerId=${userId}`);
+                if (response.ok) {
+                    const dishes = await response.json();
+                    displayDishes(dishes);
+                } else {
+                    alert('Failed to fetch dishes.');
+                }
+            } catch (error) {
+                alert('Error fetching dishes.');
+            }
+        });
+    }
+
+    if (fetchSoldDishesBtn) {
+        fetchSoldDishesBtn.addEventListener('click', async function() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                soldDishesList.innerHTML = '<li class="list-group-item text-danger">User not logged in.</li>';
+                return;
+            }
+            try {
+                const response = await fetch(`http://localhost:8087/dishes/api/sold-dishes/seller/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const soldDishes = await response.json();
+                    displaySoldDishes(soldDishes);
+                } else {
+                    soldDishesList.innerHTML = '<li class="list-group-item text-danger">Failed to fetch sold dishes.</li>';
+                }
+            } catch (error) {
+                soldDishesList.innerHTML = '<li class="list-group-item text-danger">Error fetching sold dishes.</li>';
+            }
+        });
+    }
+
+    const addDishForm = document.getElementById('addDishForm');
+    if (addDishForm) {
+        addDishForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const dishName = document.getElementById('dishName').value;
+            const description = document.getElementById('dishDescription').value;
+            const price = parseFloat(document.getElementById('dishPrice').value);
+            const stockQuantity = parseInt(document.getElementById('dishAmount').value);
+            const newDish = {
+                sellerId: parseInt(userId),
+                dishName,
+                description,
+                price,
+                stockQuantity
+            };
+            try {
+                const response = await fetch('http://localhost:8087/dishes/api/dishes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newDish)
+                });
+                if (response.ok) {
+                    alert('Dish added successfully!');
+                    addDishForm.reset();
+                } else {
+                    alert('Failed to add dish.');
+                }
+            } catch (error) {
+                alert('Error adding dish.');
+            }
+        });
+    }
+
+    function displayDishes(dishes) {
+        if (!dishesContainer) return;
+        dishesContainer.innerHTML = '';
+        if (dishes.length === 0) {
+            dishesContainer.textContent = 'No dishes found.';
+            return;
+        }
+        const list = document.createElement('ul');
+        dishes.forEach(dish => {
+            const item = document.createElement('li');
+            item.innerHTML = `<strong>${dish.dishName || dish.name}</strong> - $${dish.price} <br>
+                Description: ${dish.description}<br>
+                <button class="btn btn-info btn-sm view-buyers-btn" data-dishid="${dish.dishId || dish.id}" data-dishname="${dish.dishName || dish.name}">View Buying Customers</button>`;
+            list.appendChild(item);
+        });
+        dishesContainer.appendChild(list);
+        dishesContainer.querySelectorAll('.view-buyers-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const dishId = this.getAttribute('data-dishid');
+                const dishName = this.getAttribute('data-dishname');
+                await showBuyingCustomersModal(dishId, dishName);
+            });
+        });
+    }
+
+    async function fetchOrderAddress(orderId) {
+    const resp = await fetch(`http://localhost:8082/orders/order-address/${orderId}`);
+    if (resp.ok) {
+        return await resp.text();
+    }
+    return 'Unknown';
+}
+
+// Helper to fetch dish info by dishId
+async function fetchDishInfo(dishId) {
+    const resp = await fetch(`http://localhost:8087/dishes/api/dishes/internal/dish/${dishId}`);
+    if (resp.ok) {
+        return await resp.json();
+    }
+    return null;
+}
+
+// Helper to fetch username by userId
+async function fetchUsername(userId) {
+    const resp = await fetch(`http://localhost:8081/api/users/internal/username/${userId}`);
+    if (resp.ok) {
+        return await resp.text();
+    }
+    return 'Unknown';
+}
+
+
+async function displaySoldDishInfo(orderId, dishId, customerId, containerId) {
+    const address = await fetchOrderAddress(orderId);
+    const dish = await fetchDishInfo(dishId);
+    const username = await fetchUsername(customerId);
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div>
+            <strong>Order ID:</strong> ${orderId}<br>
+            <strong>Dish:</strong> ${dish ? dish.dishName : dishId}<br>
+            <strong>Customer:</strong> ${username} (ID: ${customerId})<br>
+            <strong>Delivery Address:</strong> ${address}
+        </div>
+    `;
+}
+
+
+    async function displaySellerDishesWithBuyers(sellerId) {
+        const container = document.getElementById('dishesContainer');
+        if (!container) return;
+        container.innerHTML = '<div>Loading...</div>';
+        try {
+            // 1. Get all dishes for this seller
+            const dishesResp = await fetch(`http://localhost:8087/dishes/api/dishes/seller/${sellerId}`);
+            if (!dishesResp.ok) throw new Error('Failed to fetch dishes');
+            const dishes = await dishesResp.json();
+            if (!Array.isArray(dishes) || dishes.length === 0) {
+                container.innerHTML = '<div>No dishes found.</div>';
+                return;
+            }
+            const list = document.createElement('ul');
+            list.className = 'list-group';
+            for (const dish of dishes) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.innerHTML = `<strong>${dish.dishName}</strong> - $${dish.price} <br>Description: ${dish.description} <br>
+                    <button class="btn btn-info btn-sm view-buyers-btn" data-dishid="${dish.dishId}" data-dishname="${dish.dishName}">View Buying Customers</button>`;
+                list.appendChild(li);
+            }
+            container.innerHTML = '';
+            container.appendChild(list);
+            // Attach event listeners for view buyers
+            container.querySelectorAll('.view-buyers-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const dishId = this.getAttribute('data-dishid');
+                    const dishName = this.getAttribute('data-dishname');
+                    await showBuyingCustomersModal(dishId, dishName);
+                });
+            });
+        } catch (e) {
+            container.innerHTML = '<div class="text-danger">Error loading dishes.</div>';
+        }
+    }
+
+    async function showBuyingCustomersModal(dishId, dishName) {
+        // 2.1 Get all customer ids who bought this dish
+        const resp = await fetch(`http://localhost:8087/dishes/api/sold-dishes/dish/${dishId}/customers`);
+        if (!resp.ok) {
+            alert('Failed to fetch buying customers.');
+            return;
+        }
+        const customerIds = await resp.json();
+        if (!Array.isArray(customerIds) || customerIds.length === 0) {
+            alert('No customers bought this dish.');
+            return;
+        }
+        let modal = document.getElementById('buyersModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'buyersModal';
+            modal.style.position = 'fixed';
+            modal.style.top = '50%';
+            modal.style.left = '50%';
+            modal.style.transform = 'translate(-50%, -50%)';
+            modal.style.background = '#fff';
+            modal.style.borderRadius = '16px';
+            modal.style.boxShadow = '0 8px 32px rgba(0,0,0,0.25)';
+            modal.style.border = '1px solid #dee2e6';
+            modal.style.padding = '32px 24px 24px 24px';
+            modal.style.zIndex = 10000;
+            modal.style.maxHeight = '80vh';
+            modal.style.overflowY = 'auto';
+            modal.style.minWidth = '340px';
+            modal.style.maxWidth = '90vw';
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.alignItems = 'center';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `<h4 class="mb-3 text-primary">Customers who bought: <span class="text-dark">${dishName}</span></h4><div id="buyersList" class="mb-3 w-100"></div><button id="closeBuyersModal" class="btn btn-outline-secondary mt-2">Close</button>`;
+        document.getElementById('closeBuyersModal').onclick = () => modal.remove();
+        // 2.2 For each customer, get their orders and filter for this dish
+        const buyersList = modal.querySelector('#buyersList');
+        buyersList.innerHTML = '';
+        const seen = new Set();
+        for (const customerId of customerIds) {
+            // Get all orders for this customer
+            const ordersResp = await fetch(`http://localhost:8082/orders/customer/${customerId}`);
+            if (!ordersResp.ok) continue;
+            const orders = await ordersResp.json();
+            for (const order of orders) {
+                if (!order.items) continue;
+                for (const item of order.items) {
+                    if (item.dishId == dishId) {
+                        // 2.3 Get shipping company for this order
+                        let shippingCompany = 'N/A';
+
+                        const key = `${customerId}-${order.id}`;
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            buyersList.innerHTML += `<div>Customer ID: <b>${customerId}</b> | Shipping Company: <b>${shippingCompany}</b></div>`;
+                        }
+                    }
+                }
+            }
+        }
+        if (buyersList.innerHTML === '') buyersList.innerHTML = '<div>No buyers found for this dish.</div>';
+    }
+});

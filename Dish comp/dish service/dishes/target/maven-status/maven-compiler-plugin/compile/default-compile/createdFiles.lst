@@ -1,0 +1,14 @@
+service2\Controller\CORSFilter.class
+service2\DTO\DishQuantity.class
+service2\Queues\StockUpdateListener.class
+service2\Model\Dish.class
+service2\Controller\DishController.class
+service2\DTO\StockUpdateRequest.class
+service2\Queues\StockCheckListener.class
+service2\DAL\DishDAL.class
+service2\Services\DishService.class
+service2\DTO\SoldDishInfoDTO.class
+service2\DTO\StockCheckResponse.class
+service2\DAL\DatabaseConnection.class
+service2\DTO\DishStockRequest.class
+service2\RestApplication.class

@@ -1,0 +1,119 @@
+package service2.Queues;
+
+import java.nio.charset.StandardCharsets;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.ejb.Singleton;
+import jakarta.inject.Inject;
+import jakarta.ejb.Startup;
+import service2.DTO.StockCheckResponse;
+import service2.Services.DishService;
+
+@Singleton
+@Startup
+public class StockCheckListener {
+
+    private static final String STOCK_CHECK_QUEUE = "stock_check_queue";
+    private static final String STOCK_CHECK_RESPONSE_QUEUE = "stock_check_response_queue";
+
+    @Inject
+    private DishService dishService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private Connection connection;
+    private Channel channel;
+
+    @PostConstruct
+    public void init() {
+        try {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost("localhost");
+            factory.setUsername("guest");
+            factory.setPassword("guest");
+            factory.setPort(5672);
+
+            connection = factory.newConnection();
+            channel = connection.createChannel();
+
+            channel.queueDeclare(STOCK_CHECK_QUEUE, false, false, false, null);
+            channel.queueDeclare(STOCK_CHECK_RESPONSE_QUEUE, false, false, false, null);
+
+            System.out.println("[✓] Connected to RabbitMQ, listening on queue: " + STOCK_CHECK_QUEUE);
+
+            DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                String message = new String(delivery.getBody(), StandardCharsets.UTF_8);
+                String correlationId = delivery.getProperties().getCorrelationId();
+
+                System.out.println("[✓] Received request: " + message);
+                System.out.println("[✓] CorrelationId from properties: " + correlationId);
+
+                try {
+                    JsonNode requestNode = objectMapper.readTree(message);
+                    if (correlationId == null && requestNode.has("correlationId")) {
+                        correlationId = requestNode.get("correlationId").asText();
+                        System.out.println("[i] Using correlationId from body: " + correlationId);
+                    }
+
+                    JsonNode items = requestNode.get("items");
+                    boolean available = true;
+                    for (JsonNode item : items) {
+                        int dishId = item.get("dishId").asInt();
+                        int quantity = item.get("quantity").asInt();
+                        if (!dishService.isStockAvailable(dishId, quantity)) {
+                            available = false;
+                            System.out.println("[i] Stock not available for dish: " + dishId);
+                            break;
+                        }
+                    }
+
+                    StockCheckResponse response = new StockCheckResponse();
+                    response.setCorrelationId(correlationId);
+                    response.setAvailable(available);
+
+                    AMQP.BasicProperties replyProps = new AMQP.BasicProperties.Builder()
+                            .correlationId(correlationId)
+                            .contentType("application/json")
+                            .deliveryMode(2)
+                            .build();
+
+                    String responseMsg = objectMapper.writeValueAsString(response);
+                    System.out.println("[✓] Sending response with correlationId: " + correlationId);
+                    System.out.println("[✓] Response body: " + responseMsg);
+
+                    channel.basicPublish("", STOCK_CHECK_RESPONSE_QUEUE, replyProps,
+                            responseMsg.getBytes(StandardCharsets.UTF_8));
+
+                    System.out.println("[✓] Sent response successfully");
+                } catch (Exception e) {
+                    System.err.println("[❌] Error processing message: " + e.getMessage());
+                    e.printStackTrace();
+                }
+                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            };
+
+            channel.basicConsume(STOCK_CHECK_QUEUE, false, deliverCallback, consumerTag -> {});
+        } catch (Exception e) {
+            System.err.println("[❌] Failed to initialize RabbitMQ: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        try {
+            if (channel != null) channel.close();
+            if (connection != null) connection.close();
+        } catch (Exception e) {
+            System.err.println("[❌] Error closing RabbitMQ connections: " + e.getMessage());
+        }
+    }
+}
